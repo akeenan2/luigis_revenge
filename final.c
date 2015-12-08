@@ -123,7 +123,6 @@ void ending_sequence();
 int print_text(int,int,char [1000]);
 int wait_input();
 void clear_screen();
-void fun_clear_screen();
 
 int in_bounds(int,int);
 
@@ -228,11 +227,9 @@ int main() {
         if (peach.num_lives <= 0) { // if dead
             clear_screen();
             if (losing_sequence() == 32) { // if trying again
-                clear_screen();
                 reset_all(fireballs,&numFireballs,&mario,&luigi,&peach,ladders,&key);
             }
             else { // if done playing
-                fun_clear_screen();
                 return 0;
             }
         }
@@ -973,6 +970,8 @@ int losing_sequence() {
     gfx_flush();
     while ((c = gfx_wait()) != 32 && c != 27);
     return c;
+
+    clear_screen();
 }
 
 void ending_sequence() {
