@@ -1011,7 +1011,8 @@ void ending_sequence() {
         gfx_flush();
         while (gfx_wait() != 32);
     }
-    clear_screen();;
+
+    clear_screen();
 }
 
 int print_text(int allowEsc, int xPos, char text[1000]) {
