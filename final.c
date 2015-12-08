@@ -93,6 +93,9 @@ void draw_gate();
 void make_peach(Peach *);
 void reset_peach(Mario *,Luigi *,Peach *,Ladder *);
 void draw_peach(Peach *);
+void draw_moving_peach(Peach *peach,double);
+void draw_static_peach(Peach *peach,double);
+void draw(int,int,int,int,int []);
 void erase_peach(Peach *);
 void draw_peach_motion(Peach *);
 void move_peach(Mario *,Luigi *,Peach *,Ladder *,Key *,int,int);
@@ -589,21 +592,17 @@ void peach_jump(Peach *peach) {
 
 void draw_peach(Peach *peach) {
     if (peach->is_jumping == 1) { // jumping
-        gfx_color(240,120,255);
-        gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-50,30,50);
+        draw_moving_peach(peach,0.5);
     }
     else if (peach->draw_position == 2) { // climbing ladder
-        gfx_color(240,120,255);
-        gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-50,30,50);
+        draw_static_peach(peach,0.5);
     }
     else if (peach->is_moving == 0) { // not moving
-        gfx_color(255,0,230);
-        gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-50,30,50);
+        draw_static_peach(peach,0.5);
     }
     else if (peach->is_moving == 1) { // moving
         if (peach->draw_position == 0) { // static
-            gfx_color(255,0,230);
-            gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-50,30,50);
+            draw_static_peach(peach,0.5);
 
             if (peach->draw_count < 50) {
                 peach->draw_count++;
@@ -615,10 +614,9 @@ void draw_peach(Peach *peach) {
 
         }
         else if (peach->draw_position == 1) { // moving
-            gfx_color(240,120,255);
-            gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-50,30,50);
+            draw_moving_peach(peach,0.5);
 
-            if (peach->draw_count < 25) {
+            if (peach->draw_count < 50) {
                 peach->draw_count++;
             } 
             else {
@@ -629,9 +627,164 @@ void draw_peach(Peach *peach) {
     }
 }
 
+void draw_moving_peach(Peach *peach, double ratio) {
+    int xPosition = peach->x_pos;
+    int yPosition = peach->y_pos - peach->jump_height;
+
+    double xRatio=(140/30)*ratio;
+    double yRatio=(60/15)*ratio;
+
+    int dp[3] = {255,50,200}; //1
+    int lp[3] = {255,115,180};//2
+    int y[3] = {255,255,0}; //3
+    int s[3] = {255,180,150}; //4
+    int b[3] = {0,0,255};//5
+    int r[3] = {255,0,0};//6
+    int w[3] = {255,255,255};//7
+
+    draw(xPosition+0*(xRatio),yPosition-(1*yRatio),1*yRatio,14*xRatio,dp); // Draws the dress
+    draw(xPosition+0*(xRatio),yPosition-(3*yRatio),2*yRatio,15*xRatio,lp);
+    draw(xPosition+2*(xRatio),yPosition-(5*yRatio),2*yRatio,13*xRatio,lp);
+    draw(xPosition+2*(xRatio),yPosition-(6*yRatio),1*yRatio,2*xRatio,dp);
+    draw(xPosition+3*(xRatio),yPosition-(10*yRatio),4*yRatio,2*xRatio,dp);
+    draw(xPosition+5*(xRatio),yPosition-(9*yRatio),2*yRatio,2*xRatio,lp);
+    draw(xPosition+4*(xRatio),yPosition-(7*yRatio),2*yRatio,9*xRatio,lp);
+    draw(xPosition+13*(xRatio),yPosition-(7*yRatio),2*yRatio,1*xRatio,dp);
+
+    draw(xPosition+5*(xRatio),yPosition-(13*yRatio),3*yRatio,1*xRatio,s); // Draws the gloves and arms
+    draw(xPosition+6*(xRatio),yPosition-(13*yRatio),2*yRatio,1*xRatio,s);
+    draw(xPosition+7*(xRatio),yPosition-(11*yRatio),1*yRatio,1*xRatio,w);
+    draw(xPosition+6*(xRatio),yPosition-(10*yRatio),1*yRatio,3*xRatio,w);
+    draw(xPosition+8*(xRatio),yPosition-(9*yRatio),1*yRatio,2*xRatio,w);
+    draw(xPosition+9*(xRatio),yPosition-(8*yRatio),1*yRatio,1*xRatio,w);
+    draw(xPosition+11*(xRatio),yPosition-(9*yRatio),2*yRatio,1*xRatio,w);
+    draw(xPosition+12*(xRatio),yPosition-(12*yRatio),4*yRatio,1*xRatio,w);
+    draw(xPosition+13*(xRatio),yPosition-(13*yRatio),1*yRatio,2*xRatio,s);
+    draw(xPosition+13*(xRatio),yPosition-(12*yRatio),2*yRatio,1*xRatio,s);
+
+    draw(xPosition+8*(xRatio),yPosition-(14*yRatio),3*yRatio,3*xRatio,lp); // Draws the chest ornament
+    draw(xPosition+9*(xRatio),yPosition-(14*yRatio),2*yRatio,2*xRatio,y);
+    draw(xPosition+10*(xRatio),yPosition-(14*yRatio),1*yRatio,1*xRatio,b);
+
+    draw(xPosition+3*(xRatio),yPosition-(16*yRatio),2*yRatio,12*xRatio,lp); // Draws the top of the dress 
+    draw(xPosition+9*(xRatio),yPosition-(17*yRatio),1*yRatio,2*xRatio,dp);
+
+    draw(xPosition+1*(xRatio),yPosition-(14*yRatio),3*yRatio,3*xRatio,y); // Draws the hair
+    draw(xPosition+0*(xRatio),yPosition-(17*yRatio),3*yRatio,2*xRatio,y);
+    draw(xPosition+1*(xRatio),yPosition-(18*yRatio),1*yRatio,5*xRatio,y);
+    draw(xPosition+0*(xRatio),yPosition-(19*yRatio),1*yRatio,5*xRatio,y);
+    draw(xPosition+2*(xRatio),yPosition-(22*yRatio),3*yRatio,2*xRatio,y);
+    draw(xPosition+2*(xRatio),yPosition-(25*yRatio),3*yRatio,5*xRatio,y);
+    draw(xPosition+4*(xRatio),yPosition-(26*yRatio),2*yRatio,4*xRatio,y);
+    draw(xPosition+5*(xRatio),yPosition-(27*yRatio),3*yRatio,9*xRatio,y);
+    draw(xPosition+14*(xRatio),yPosition-(26*yRatio),3*yRatio,1*xRatio,y);
+    draw(xPosition+10*(xRatio),yPosition-(24*yRatio),1*yRatio,2*xRatio,y);
+    draw(xPosition+13*(xRatio),yPosition-(18*yRatio),1*yRatio,1*xRatio,y);
+    draw(xPosition+1*(xRatio),yPosition-(22*yRatio),3*yRatio,1*xRatio,y);
+    draw(xPosition+0*(xRatio),yPosition-(18*yRatio),1*yRatio,1*xRatio,y);
+
+    draw(xPosition+8*(xRatio),yPosition-(30*yRatio),2*yRatio,5*xRatio,y); // Draws the crown 
+    draw(xPosition+8*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,b);
+    draw(xPosition+10*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,r);
+    draw(xPosition+12*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,b);
+
+    draw(xPosition+5*(xRatio),yPosition-(21*yRatio),2*yRatio,1*xRatio,s); // Draws the face
+    draw(xPosition+5*(xRatio),yPosition-(19*yRatio),1*yRatio,1*xRatio,b);
+    draw(xPosition+6*(xRatio),yPosition-(19*yRatio),1*yRatio,1*xRatio,s);
+    draw(xPosition+7*(xRatio),yPosition-(22*yRatio),5*yRatio,2*xRatio,s);
+    draw(xPosition+9*(xRatio),yPosition-(23*yRatio),1*yRatio,1*xRatio,s); // these two lines draw the eyebrows
+    draw(xPosition+12*(xRatio),yPosition-(23*yRatio),1*yRatio,1*xRatio,s);
+    draw(xPosition+10*(xRatio),yPosition-(22*yRatio),2*yRatio,2*xRatio,s);
+    draw(xPosition+9*(xRatio),yPosition-(20*yRatio),3*yRatio,3*xRatio,s);
+    draw(xPosition+12*(xRatio),yPosition-(20*yRatio),2*yRatio,1*xRatio,s);
+    draw(xPosition+13*(xRatio),yPosition-(22*yRatio),3*yRatio,1*xRatio,s);
+    draw(xPosition+10*(xRatio),yPosition-(19*yRatio),1*yRatio,2*xRatio,r);
+}
+
+void draw( int x, int y, int height, int width, int color[]){
+
+    char c;
+    gfx_color(color[0], color[1], color[2]);
+    gfx_fill_rectangle( x, y, width, height );
+
+}
+
+void draw_static_peach(Peach *peach, double ratio) {
+    int xPosition = peach->x_pos;
+    int yPosition = peach->y_pos - peach->jump_height;
+
+    double xRatio=(140/30)*ratio;
+    double yRatio=(60/15)*ratio;
+
+    int dp[3] = {255,50,200}; //1
+    int lp[3] = {255,115,180};//2
+    int y[3] = {255,255,0}; //3
+    int s[3] = {255,180,150}; //4
+    int b[3] = {0,0,255};//5
+    int r[3] = {255,0,0};//6
+    int w[3] = {255,255,255};//7
+
+    draw(xPosition+1*(xRatio),yPosition-(1*yRatio),1*yRatio,14*xRatio,dp); // Draws the dress
+    draw(xPosition+1*(xRatio),yPosition-(3*yRatio),2*yRatio,14*xRatio,lp);
+    draw(xPosition+2*(xRatio),yPosition-(5*yRatio),2*yRatio,12*xRatio,lp);
+    draw(xPosition+2*(xRatio),yPosition-(6*yRatio),1*yRatio,2*xRatio,dp);
+    draw(xPosition+3*(xRatio),yPosition-(10*yRatio),4*yRatio,2*xRatio,dp);
+    draw(xPosition+5*(xRatio),yPosition-(9*yRatio),2*yRatio,2*xRatio,lp);
+    draw(xPosition+4*(xRatio),yPosition-(7*yRatio),2*yRatio,9*xRatio,lp);
+    draw(xPosition+13*(xRatio),yPosition-(7*yRatio),2*yRatio,1*xRatio,dp);
+
+    draw(xPosition+5*(xRatio),yPosition-(13*yRatio),3*yRatio,1*xRatio,s); // Draws the gloves and arms
+    draw(xPosition+6*(xRatio),yPosition-(13*yRatio),2*yRatio,1*xRatio,s);
+    draw(xPosition+7*(xRatio),yPosition-(11*yRatio),1*yRatio,1*xRatio,w);
+    draw(xPosition+6*(xRatio),yPosition-(10*yRatio),1*yRatio,3*xRatio,w);
+    draw(xPosition+8*(xRatio),yPosition-(9*yRatio),1*yRatio,2*xRatio,w);
+    draw(xPosition+9*(xRatio),yPosition-(8*yRatio),1*yRatio,1*xRatio,w);
+    draw(xPosition+11*(xRatio),yPosition-(9*yRatio),2*yRatio,1*xRatio,w);
+    draw(xPosition+12*(xRatio),yPosition-(12*yRatio),4*yRatio,1*xRatio,w);
+    draw(xPosition+13*(xRatio),yPosition-(13*yRatio),1*yRatio,2*xRatio,s);
+    draw(xPosition+13*(xRatio),yPosition-(12*yRatio),2*yRatio,1*xRatio,s);
+
+    draw(xPosition+8*(xRatio),yPosition-(14*yRatio),3*yRatio,3*xRatio,lp); // Draws the chest ornament
+    draw(xPosition+9*(xRatio),yPosition-(14*yRatio),2*yRatio,2*xRatio,y);
+    draw(xPosition+10*(xRatio),yPosition-(14*yRatio),1*yRatio,1*xRatio,b);
+
+    draw(xPosition+3*(xRatio),yPosition-(16*yRatio),2*yRatio,12*xRatio,lp); // Draws the top of the dress 
+    draw(xPosition+9*(xRatio),yPosition-(17*yRatio),1*yRatio,2*xRatio,dp);
+
+    draw(xPosition+2*(xRatio),yPosition-(14*yRatio),3*yRatio,2*xRatio,y); // Draws the hair
+    draw(xPosition+1*(xRatio),yPosition-(17*yRatio),3*yRatio,1*xRatio,y);
+    draw(xPosition+1*(xRatio),yPosition-(18*yRatio),1*yRatio,5*xRatio,y);
+    draw(xPosition+1*(xRatio),yPosition-(19*yRatio),1*yRatio,5*xRatio,y);
+    draw(xPosition+2*(xRatio),yPosition-(22*yRatio),3*yRatio,2*xRatio,y);
+    draw(xPosition+2*(xRatio),yPosition-(25*yRatio),3*yRatio,5*xRatio,y);
+    draw(xPosition+4*(xRatio),yPosition-(26*yRatio),2*yRatio,4*xRatio,y);
+    draw(xPosition+5*(xRatio),yPosition-(27*yRatio),3*yRatio,9*xRatio,y);
+    draw(xPosition+14*(xRatio),yPosition-(26*yRatio),3*yRatio,1*xRatio,y);
+    draw(xPosition+10*(xRatio),yPosition-(24*yRatio),1*yRatio,2*xRatio,y);
+    draw(xPosition+13*(xRatio),yPosition-(18*yRatio),1*yRatio,1*xRatio,y);
+    draw(xPosition+1*(xRatio),yPosition-(22*yRatio),3*yRatio,1*xRatio,y);
+
+    draw(xPosition+8*(xRatio),yPosition-(30*yRatio),2*yRatio,5*xRatio,y); // Draws the crown 
+    draw(xPosition+8*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,b);
+    draw(xPosition+10*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,r);
+    draw(xPosition+12*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,b);
+
+    draw(xPosition+5*(xRatio),yPosition-(21*yRatio),2*yRatio,1*xRatio,s); // Draws the face
+    draw(xPosition+5*(xRatio),yPosition-(19*yRatio),1*yRatio,1*xRatio,b);
+    draw(xPosition+6*(xRatio),yPosition-(19*yRatio),1*yRatio,1*xRatio,s);
+    draw(xPosition+7*(xRatio),yPosition-(22*yRatio),5*yRatio,2*xRatio,s);
+    draw(xPosition+9*(xRatio),yPosition-(23*yRatio),1*yRatio,1*xRatio,s); // these two lines draw the eyebrows
+    draw(xPosition+12*(xRatio),yPosition-(23*yRatio),1*yRatio,1*xRatio,s);
+    draw(xPosition+10*(xRatio),yPosition-(22*yRatio),2*yRatio,2*xRatio,s);
+    draw(xPosition+9*(xRatio),yPosition-(20*yRatio),3*yRatio,3*xRatio,s);
+    draw(xPosition+12*(xRatio),yPosition-(20*yRatio),2*yRatio,1*xRatio,s);
+    draw(xPosition+13*(xRatio),yPosition-(22*yRatio),3*yRatio,1*xRatio,s);
+    draw(xPosition+10*(xRatio),yPosition-(19*yRatio),1*yRatio,2*xRatio,r);
+}
+
 void erase_peach(Peach *peach) {
     gfx_color(0,0,0);
-    gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-50,30,50);
+    gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-60,30,60);
 }
 
 void draw_peach_motion(Peach *peach) {
@@ -969,9 +1122,10 @@ int losing_sequence() {
     gfx_text(5,height-15,"Press space to try again or 'esc' to quit...");
     gfx_flush();
     while ((c = gfx_wait()) != 32 && c != 27);
-    return c;
 
     clear_screen();
+
+    return c;
 }
 
 void ending_sequence() {
