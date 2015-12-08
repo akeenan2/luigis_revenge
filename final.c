@@ -173,7 +173,6 @@ int main() {
     moving_sequence(&mario,&luigi,&peach,ladders,motion1,12);
 
     clear_screen();
-
     menu_sequence();
     clear_screen();
 
@@ -522,9 +521,7 @@ void move_peach(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *
     y = peach->y_pos + peach->speed * ch_y;
 
     peach->is_moving = 1; // peach is moving
-
-    printf("Draw position: %i\n",peach->draw_position);
-
+    
     if (!in_bounds(x,y)) { // if out of left boundary, correct position
         peach->x_pos = 0;
     }
@@ -792,8 +789,7 @@ void move_ladders(Peach *peach, Ladder *ladders) {
     for (i=0;i<6;i++) {
         erase_ladder(&ladders[i]);
         move_ladder(peach,&ladders[i],i);
-        draw_ladder(&ladders[i]);
-        draw_peach(peach);
+        draw_ladder(ladders);
     }
 }
 
