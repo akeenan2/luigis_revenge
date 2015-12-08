@@ -722,26 +722,14 @@ void erase_peach(Peach *peach) {
 void draw_peach_motion(Peach *peach) {
     double x_pos = peach->x_pos;
     int i;
-    if (peach->is_climbing == 0 && peach->is_jumping == 0) {
-        for (i=(peach->speed-1);i>0;i--) {
-            peach->x_pos = x_pos+i*peach->move_direction;
-            draw_peach(peach);
-            gfx_flush();
-            usleep(pow(10,3.5));
-            erase_peach(peach);
-        }
-    }
-    else if (peach->is_jumping == 0) {
-        for (i=2;i>0;i--) {
-            peach->x_pos = x_pos+i*peach->move_direction;
-            draw_peach(peach);
-            gfx_flush();
-            usleep(pow(10,3.5));
-            erase_peach(peach);
-        }
+    for (i=(peach->speed-1);i>0;i--) {
+        peach->x_pos = x_pos+i*peach->move_direction;
+        draw_peach(peach);
+        gfx_flush();
+        usleep(pow(10,3.5));
+        erase_peach(peach);
     }
     peach->x_pos = x_pos;
-    draw_peach(peach);
 }
 
 int catch_key(Peach *peach, Key *key) {
