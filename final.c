@@ -44,7 +44,7 @@ typedef struct Peach_S {
     int current_path;
     int is_climbing;
     int is_moving;
-    int move_direction;
+    int move_direction; // 1 - right, -1 - left
     int is_jumping;
     double jump_height;
     int jump_direction;
@@ -60,14 +60,31 @@ typedef struct Key_S {
     double y_pos;
     double angle;
     int exists;
+    int caught;
     int count;
     int intro_complete;
 } Key;
 
+// character graphics
+typedef struct Coordinates_S {
+    int x;
+    int y;
+    int width;
+    int height;
+    int color[3];
+} Coord;
+
+// global variables
+
 int width = 700;
 int height = 800;
 
+Coord static_peach[49];
+Coord moving_peach[50];
+
 // function prototypes
+void import_all();
+void set_color(int *,char);
 void initial_make_all(Mario *,Luigi *,Peach *,Ladder *,Key *);
 void draw_all_static(Mario *,Luigi *,Peach *,Ladder *);
 void draw_lives(Peach *);
@@ -82,7 +99,7 @@ void remove_fireball(Fireball *,int,int);
 int collided(Fireball *,Peach *,int);
 
 void make_mario(Mario *);
-void draw_mario(Mario *);
+void draw_mario(Mario *,Peach *);
 
 void make_luigi(Luigi *);
 void draw_luigi(Luigi *);
@@ -93,13 +110,13 @@ void draw_gate();
 void make_peach(Peach *);
 void reset_peach(Mario *,Luigi *,Peach *,Ladder *);
 void draw_peach(Peach *);
-void draw_moving_peach(Peach *peach,double);
-void draw_static_peach(Peach *peach,double);
+void draw_static_peach(int,int,double,int);
+void draw_moving_peach(int,int,double,int);
 void draw(int,int,int,int,int []);
 void erase_peach(Peach *);
 void draw_peach_motion(Peach *);
 void move_peach(Mario *,Luigi *,Peach *,Ladder *,Key *,int,int);
-void peach_jump(Peach *peach);
+void peach_jump(Mario *,Luigi *,Peach *,Ladder *);
 
 int catch_key(Peach *,Key *);
 
@@ -112,10 +129,11 @@ void erase_ladder(Ladder *);
 
 void draw_paths();
 
-void new_key(Key *key);
-void draw_key(Key *key);
-void move_key(Key *key);
-void erase_key(Key *key);
+void make_key(Key *);
+void new_key(Key *);
+void draw_key(Key *);
+void move_key(Key *);
+void erase_key(Key *);
 
 void menu_sequence();
 void moving_sequence(Mario *,Luigi *,Peach *,Ladder *,int *,int);
@@ -148,11 +166,14 @@ int main() {
     gfx_clear();
 
     initial_make_all(&mario,&luigi,&peach,ladders,&key);
+    import_all();
+
     int motion1[12] = {78,1,-30,760,    50,0,48,760,   20,-4,48,760};
 
     moving_sequence(&mario,&luigi,&peach,ladders,motion1,12);
 
     clear_screen();
+
     menu_sequence();
     clear_screen();
 
@@ -163,6 +184,7 @@ int main() {
     peach.current_path = 6;
 
     while (1) {
+        erase_peach(&peach);
         move_ladders(&peach,ladders);
         draw_all_static(&mario,&luigi,&peach,ladders);
 
@@ -214,11 +236,11 @@ int main() {
         }
         else {
             peach.is_moving = 0;
+            draw_peach(&peach);
         }
         if (peach.is_jumping == 1) {
-            peach_jump(&peach);
+            peach_jump(&mario,&luigi,&peach,ladders);
         }
-        draw_peach(&peach);
 
         if(catch_key(&peach,&key) == 1) {
             erase_key(&key);
@@ -243,24 +265,67 @@ int main() {
     }
 }
 
+void import_all() {
+    int i;
+    char color;
+    FILE *fp;
+
+    fp = fopen("peach_static.txt","r");
+    i = 0;
+    while (fscanf(fp,"%i %i %i %i %c",&static_peach[i].x,&static_peach[i].y,&static_peach[i].width,&static_peach[i].height,&color) != EOF) {
+        set_color(static_peach[i].color,color);
+        i++;
+    }
+
+    fp = fopen("peach_moving.txt","r");
+    i = 0;
+    while (fscanf(fp,"%i %i %i %i %c",&moving_peach[i].x,&moving_peach[i].y,&moving_peach[i].width,&moving_peach[i].height,&color) != EOF) {
+        set_color(moving_peach[i].color,color);
+        i++;
+    }
+}
+
+void set_color(int *color_array, char color) {
+    switch(color) {
+        case 'd':
+            color_array[0] = 255; color_array[1] = 50; color_array[2] = 200;
+        break;
+        case 'l':
+            color_array[0] = 255; color_array[1] = 115; color_array[2] = 180;
+        break;
+        case 'y':
+            color_array[0] = 255; color_array[1] = 225; color_array[2] = 0;
+        break;
+        case 's':
+            color_array[0] = 255; color_array[1] = 180; color_array[2] = 150;
+        break;
+        case 'b':
+            color_array[0] = 0; color_array[1] = 0; color_array[2] = 255;
+        break;
+        case 'r':
+            color_array[0] = 255; color_array[1] = 0; color_array[2] = 0;
+        break;
+        case 'w':
+            color_array[0] = 255; color_array[1] = 255; color_array[2] = 255;
+        break;
+    }
+}
+
 void initial_make_all(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key) {
     make_mario(mario);
     make_luigi(luigi);
     make_peach(peach);
     make_ladders(ladders);
-    key->count = 0;
-    key->intro_complete = 0;
-    key->exists = 0;
+    make_key(key);
 }
 
 void draw_all_static(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders) {
-    draw_mario(mario);
+    draw_mario(mario,peach);
     draw_luigi(luigi);
     draw_platform();
     draw_paths();
     draw_gate();
     draw_ladders(ladders);
-    draw_lives(peach);
     gfx_flush();
 }
 
@@ -269,12 +334,12 @@ void draw_lives(Peach *peach) {
     int numLives = peach->num_lives;
     for (i=0;i<3;i++) {
         if (i<numLives) {
-            gfx_color(255,0,230);
+            draw_static_peach(10+i*20,40,.25,1);
         }
         else {
             gfx_color(0,0,0);
+            gfx_fill_rectangle(10+i*20,10,15,30);
         }
-        gfx_fill_circle(50+i*15,50,5);
     }
 }
 
@@ -282,7 +347,7 @@ void reset_all(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luig
     initial_make_all(mario,luigi,peach,ladders,key);
     (*numFireballs) = 0;
     key->exists = 0;
-    key->intro_complete = 0;
+    key->intro_complete = 1;
 }
 
 void new_fireball(Fireball *fireballs, int f) {
@@ -337,9 +402,8 @@ void remove_fireball (Fireball *fireballs, int f, int numFireballs) {
 
 int collided (Fireball *fireballs, Peach *peach, int f) {
     double change_x,change_y,r;
-
-    change_x = fireballs[f].x_pos - (peach->x_pos);
-    change_y = fireballs[f].y_pos - (peach->y_pos+peach->jump_height);
+    change_x = fireballs[f].x_pos - (peach->x_pos+(35/2.));
+    change_y = fireballs[f].y_pos - (peach->y_pos+peach->jump_height-(60/2.));
 
     r = sqrt(pow(change_x,2)+pow(change_y,2));
 
@@ -357,7 +421,7 @@ void make_mario(Mario *mario) {
     mario->draw_position = 0;
 }
 
-void draw_mario(Mario *mario) {
+void draw_mario(Mario *mario, Peach *peach) {
     if (mario->draw_position == 0) {
         gfx_color(225,0,0);
         gfx_fill_rectangle(mario->x_pos,mario->y_pos-50,30,50);
@@ -365,12 +429,14 @@ void draw_mario(Mario *mario) {
         gfx_color(0,0,0);
         gfx_fill_rectangle(mario->x_pos-10,mario->y_pos-110,50,25);
 
-        if (mario->draw_count < 25) {
-            mario->draw_count++;
-        } 
-        else {
-            mario->draw_count = 0;
-            mario->draw_position = 1;
+        if (peach->is_jumping == 0) {
+            if (mario->draw_count < 50) {
+                mario->draw_count++;
+            } 
+            else {
+                mario->draw_count = 0;
+                mario->draw_position = 1;
+            }
         }
     }
     else if (mario->draw_position == 1) {
@@ -379,13 +445,15 @@ void draw_mario(Mario *mario) {
 
         gfx_color(255,255,255);
         gfx_text(mario->x_pos,mario->y_pos-90,"HELP!!");
-
-        if (mario->draw_count < 50) {
-            mario->draw_count++;
-        } 
-        else {
-            mario->draw_count = 0;
-            mario->draw_position = 0;
+        
+        if (peach->is_jumping == 0) {
+            if (mario->draw_count < 50) {
+                mario->draw_count++;
+            } 
+            else {
+                mario->draw_count = 0;
+                mario->draw_position = 0;
+            }
         }
     }
 }
@@ -400,7 +468,6 @@ void make_luigi(Luigi *luigi) {
 void draw_luigi(Luigi *luigi) {
     gfx_color(0,180,0);
     gfx_fill_rectangle(luigi->x_pos,luigi->y_pos-50,30,50);
-
 }
 
 void draw_platform() {
@@ -451,23 +518,22 @@ void move_peach(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *
     double x,y;
     int l = peach->current_path;
 
-    erase_peach(peach);
     x = peach->x_pos + peach->speed * ch_x;
     y = peach->y_pos + peach->speed * ch_y;
 
-    peach->is_moving = 1;
+    peach->is_moving = 1; // peach is moving
+
+    printf("Draw position: %i\n",peach->draw_position);
 
     if (!in_bounds(x,y)) { // if out of left boundary, correct position
         peach->x_pos = 0;
-        return;
     }
     else if (!in_bounds(x+30,y)) { // if out of right boundary, correct position
         peach->x_pos = width-30;
-        return;
     }
     else if ((l == 6 && x < 410) && key->count < 1) { // restrict movement on fifth level if keys not collected
         peach->x_pos = 410;
-        if (key->intro_complete == 0) {
+        if (key->intro_complete == 0) { // if haven't completed intro and approaching mario
             draw_peach(peach);
             gfx_flush();
             usleep(pow(10,5.5));
@@ -479,9 +545,9 @@ void move_peach(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *
             peach->current_path = 0;
 
             key->intro_complete = 1;
-            return;
+            draw_lives(peach);
         }
-        else if (key->intro_complete == 1) {
+        else if (key->intro_complete == 1) { //  if completed intro and approaching mario
             draw_peach(peach);
             gfx_color(255,255,255);
             gfx_text(400,15,"To talk to Mario, press space.");
@@ -497,49 +563,47 @@ void move_peach(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *
             }
             gfx_color(0,0,0);
             gfx_fill_rectangle(400,0,300,15);
-            return;
         }
     }
-    else if ((l == 6 && x < 410) && key->count >= 1) {
+    else if ((l == 6 && x < 410) && key->count >= 1) { // if approaching mario and key has been caught
         peach->x_pos = 410;
         draw_peach(peach);
         gfx_flush();
         usleep(pow(10,6));
         ending_sequence();
-        return;
     }
     else if (l==5 && x < 300) { // restrict movement on fourth level
         peach->x_pos = 300;
     }
-    else {
+    else { // any other floor
         if (peach->is_climbing==0) { // not on ladder
             if (ch_y == 0) { // moving horizontally
-                if (peach->is_jumping==0) {
+                if (peach->is_jumping == 0) { // if not jumping, move horizontally
                     peach->x_pos = x;
                     peach->y_pos = y;
+                    draw_peach_motion(peach);
                 }
             }
             else if (ch_y == -1) { // moving upwards
-                if(((peach->x_pos+15) >= (ladders[l].x_pos-16)) && ((peach->x_pos+15) <= (ladders[l].x_pos+18))) {
+                if(((peach->x_pos+15) >= (ladders[l].x_pos-16)) && ((peach->x_pos+15) <= (ladders[l].x_pos+18))) { // if can move onto the ladder above
                     peach->x_pos = ladders[l].x_pos-14;
                     peach->y_pos = y;
                     peach->is_climbing = 1;
                     peach->draw_position = 2;
                 }
-                else {
-                    if (peach->jump_height == 0) {
+                else { // not between a ladder
+                    if (peach->jump_height == 0) { // if currently not jumping
                         peach->is_jumping = 1;
-                        return;
                     }
                 }
             }
             else if (ch_y == 1 && l != 0 && key->intro_complete == 1) { // moving downwards
-                if(((peach->x_pos+15) >= (ladders[l-1].x_pos-16)) && ((peach->x_pos+15) <= (ladders[l-1].x_pos+18))) {
+                if(((peach->x_pos+15) >= (ladders[l-1].x_pos-16)) && ((peach->x_pos+15) <= (ladders[l-1].x_pos+18))) { // if can move onto the ladder below
                     peach->x_pos = ladders[l-1].x_pos-14;
                     peach->y_pos = y;
                     peach->is_climbing = 1;
                     peach->draw_position = 2;
-                    (peach->current_path)--;
+                    (peach->current_path)--; // adjust to lower path
                 }
             }
         }
@@ -553,32 +617,34 @@ void move_peach(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *
                     peach->is_climbing = 0;
                     peach->draw_position = 0;
                     peach->draw_count = 0;
-                    (peach->current_path)++;
+                    (peach->current_path)++; // adjust to higher path
                 }
                 else if (ch_y == 1 && y >= (ladders[l].y_pos)) { // bottom of ladder
                     peach->y_pos = ladders[l].y_pos;
                     peach->draw_position = 0;
                     peach->draw_count = 0;
                     peach->is_climbing = 0;
+                    peach->is_moving = 0;
                 }
             }
         }
+        draw_peach(peach);
     }
-    draw_peach_motion(peach);
 }
 
-void peach_jump(Peach *peach) {
+void peach_jump(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders) {
     int i;
     for (i=0;i<10;i++) {
         erase_peach(peach);
+        draw_all_static(mario,luigi,peach,ladders);
         if (peach->is_jumping == 1) {
-            peach->jump_speed = abs(peach->jump_height-75)/75.;
+            peach->jump_speed = abs(peach->jump_height-75)/75.; // slow at top and faster at bottom of jump
             peach->draw_position = 1;
             peach->jump_height += peach->jump_direction*peach->jump_speed;
             if (peach->jump_height >= 50) {
                 peach->jump_direction = -1;
             }
-            else if (peach->jump_height < 0) {
+            else if (peach->jump_height <= 0) {
                 peach->jump_height = 0;
                 peach->jump_direction = 1;
                 peach->is_jumping = 0;
@@ -592,17 +658,14 @@ void peach_jump(Peach *peach) {
 
 void draw_peach(Peach *peach) {
     if (peach->is_jumping == 1) { // jumping
-        draw_moving_peach(peach,0.5);
+        draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
     }
     else if (peach->draw_position == 2) { // climbing ladder
-        draw_static_peach(peach,0.5);
-    }
-    else if (peach->is_moving == 0) { // not moving
-        draw_static_peach(peach,0.5);
+        draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
     }
     else if (peach->is_moving == 1) { // moving
-        if (peach->draw_position == 0) { // static
-            draw_static_peach(peach,0.5);
+        if (peach->draw_position == 0) { // static draw
+            draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
 
             if (peach->draw_count < 50) {
                 peach->draw_count++;
@@ -611,10 +674,9 @@ void draw_peach(Peach *peach) {
                 peach->draw_count = 0;
                 peach->draw_position = 1;
             }
-
         }
-        else if (peach->draw_position == 1) { // moving
-            draw_moving_peach(peach,0.5);
+        else if (peach->draw_position == 1) { // moving draw
+            draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
 
             if (peach->draw_count < 50) {
                 peach->draw_count++;
@@ -625,166 +687,39 @@ void draw_peach(Peach *peach) {
             }
         }
     }
+    else { // not doing anything
+        draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+    }
 }
 
-void draw_moving_peach(Peach *peach, double ratio) {
-    int xPosition = peach->x_pos;
-    int yPosition = peach->y_pos - peach->jump_height;
-
+void draw_static_peach(int xPosition, int yPosition, double ratio, int direction) {
     double xRatio=(140/30)*ratio;
     double yRatio=(60/15)*ratio;
 
-    int dp[3] = {255,50,200}; //1
-    int lp[3] = {255,115,180};//2
-    int y[3] = {255,255,0}; //3
-    int s[3] = {255,180,150}; //4
-    int b[3] = {0,0,255};//5
-    int r[3] = {255,0,0};//6
-    int w[3] = {255,255,255};//7
-
-    draw(xPosition+0*(xRatio),yPosition-(1*yRatio),1*yRatio,14*xRatio,dp); // Draws the dress
-    draw(xPosition+0*(xRatio),yPosition-(3*yRatio),2*yRatio,15*xRatio,lp);
-    draw(xPosition+2*(xRatio),yPosition-(5*yRatio),2*yRatio,13*xRatio,lp);
-    draw(xPosition+2*(xRatio),yPosition-(6*yRatio),1*yRatio,2*xRatio,dp);
-    draw(xPosition+3*(xRatio),yPosition-(10*yRatio),4*yRatio,2*xRatio,dp);
-    draw(xPosition+5*(xRatio),yPosition-(9*yRatio),2*yRatio,2*xRatio,lp);
-    draw(xPosition+4*(xRatio),yPosition-(7*yRatio),2*yRatio,9*xRatio,lp);
-    draw(xPosition+13*(xRatio),yPosition-(7*yRatio),2*yRatio,1*xRatio,dp);
-
-    draw(xPosition+5*(xRatio),yPosition-(13*yRatio),3*yRatio,1*xRatio,s); // Draws the gloves and arms
-    draw(xPosition+6*(xRatio),yPosition-(13*yRatio),2*yRatio,1*xRatio,s);
-    draw(xPosition+7*(xRatio),yPosition-(11*yRatio),1*yRatio,1*xRatio,w);
-    draw(xPosition+6*(xRatio),yPosition-(10*yRatio),1*yRatio,3*xRatio,w);
-    draw(xPosition+8*(xRatio),yPosition-(9*yRatio),1*yRatio,2*xRatio,w);
-    draw(xPosition+9*(xRatio),yPosition-(8*yRatio),1*yRatio,1*xRatio,w);
-    draw(xPosition+11*(xRatio),yPosition-(9*yRatio),2*yRatio,1*xRatio,w);
-    draw(xPosition+12*(xRatio),yPosition-(12*yRatio),4*yRatio,1*xRatio,w);
-    draw(xPosition+13*(xRatio),yPosition-(13*yRatio),1*yRatio,2*xRatio,s);
-    draw(xPosition+13*(xRatio),yPosition-(12*yRatio),2*yRatio,1*xRatio,s);
-
-    draw(xPosition+8*(xRatio),yPosition-(14*yRatio),3*yRatio,3*xRatio,lp); // Draws the chest ornament
-    draw(xPosition+9*(xRatio),yPosition-(14*yRatio),2*yRatio,2*xRatio,y);
-    draw(xPosition+10*(xRatio),yPosition-(14*yRatio),1*yRatio,1*xRatio,b);
-
-    draw(xPosition+3*(xRatio),yPosition-(16*yRatio),2*yRatio,12*xRatio,lp); // Draws the top of the dress 
-    draw(xPosition+9*(xRatio),yPosition-(17*yRatio),1*yRatio,2*xRatio,dp);
-
-    draw(xPosition+1*(xRatio),yPosition-(14*yRatio),3*yRatio,3*xRatio,y); // Draws the hair
-    draw(xPosition+0*(xRatio),yPosition-(17*yRatio),3*yRatio,2*xRatio,y);
-    draw(xPosition+1*(xRatio),yPosition-(18*yRatio),1*yRatio,5*xRatio,y);
-    draw(xPosition+0*(xRatio),yPosition-(19*yRatio),1*yRatio,5*xRatio,y);
-    draw(xPosition+2*(xRatio),yPosition-(22*yRatio),3*yRatio,2*xRatio,y);
-    draw(xPosition+2*(xRatio),yPosition-(25*yRatio),3*yRatio,5*xRatio,y);
-    draw(xPosition+4*(xRatio),yPosition-(26*yRatio),2*yRatio,4*xRatio,y);
-    draw(xPosition+5*(xRatio),yPosition-(27*yRatio),3*yRatio,9*xRatio,y);
-    draw(xPosition+14*(xRatio),yPosition-(26*yRatio),3*yRatio,1*xRatio,y);
-    draw(xPosition+10*(xRatio),yPosition-(24*yRatio),1*yRatio,2*xRatio,y);
-    draw(xPosition+13*(xRatio),yPosition-(18*yRatio),1*yRatio,1*xRatio,y);
-    draw(xPosition+1*(xRatio),yPosition-(22*yRatio),3*yRatio,1*xRatio,y);
-    draw(xPosition+0*(xRatio),yPosition-(18*yRatio),1*yRatio,1*xRatio,y);
-
-    draw(xPosition+8*(xRatio),yPosition-(30*yRatio),2*yRatio,5*xRatio,y); // Draws the crown 
-    draw(xPosition+8*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,b);
-    draw(xPosition+10*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,r);
-    draw(xPosition+12*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,b);
-
-    draw(xPosition+5*(xRatio),yPosition-(21*yRatio),2*yRatio,1*xRatio,s); // Draws the face
-    draw(xPosition+5*(xRatio),yPosition-(19*yRatio),1*yRatio,1*xRatio,b);
-    draw(xPosition+6*(xRatio),yPosition-(19*yRatio),1*yRatio,1*xRatio,s);
-    draw(xPosition+7*(xRatio),yPosition-(22*yRatio),5*yRatio,2*xRatio,s);
-    draw(xPosition+9*(xRatio),yPosition-(23*yRatio),1*yRatio,1*xRatio,s); // these two lines draw the eyebrows
-    draw(xPosition+12*(xRatio),yPosition-(23*yRatio),1*yRatio,1*xRatio,s);
-    draw(xPosition+10*(xRatio),yPosition-(22*yRatio),2*yRatio,2*xRatio,s);
-    draw(xPosition+9*(xRatio),yPosition-(20*yRatio),3*yRatio,3*xRatio,s);
-    draw(xPosition+12*(xRatio),yPosition-(20*yRatio),2*yRatio,1*xRatio,s);
-    draw(xPosition+13*(xRatio),yPosition-(22*yRatio),3*yRatio,1*xRatio,s);
-    draw(xPosition+10*(xRatio),yPosition-(19*yRatio),1*yRatio,2*xRatio,r);
+    int i;
+    for (i=0;i<49;i++) {
+        draw(xPosition+(static_peach[i].x)*xRatio,yPosition-(static_peach[i].y)*yRatio,(static_peach[i].width)*xRatio,(static_peach[i].height)*yRatio,static_peach[i].color);
+    }
 }
 
-void draw( int x, int y, int height, int width, int color[]){
-
-    char c;
-    gfx_color(color[0], color[1], color[2]);
-    gfx_fill_rectangle( x, y, width, height );
-
-}
-
-void draw_static_peach(Peach *peach, double ratio) {
-    int xPosition = peach->x_pos;
-    int yPosition = peach->y_pos - peach->jump_height;
-
+void draw_moving_peach(int xPosition, int yPosition, double ratio, int direction) {
     double xRatio=(140/30)*ratio;
     double yRatio=(60/15)*ratio;
 
-    int dp[3] = {255,50,200}; //1
-    int lp[3] = {255,115,180};//2
-    int y[3] = {255,255,0}; //3
-    int s[3] = {255,180,150}; //4
-    int b[3] = {0,0,255};//5
-    int r[3] = {255,0,0};//6
-    int w[3] = {255,255,255};//7
+    int i;
+    for (i=0;i<50;i++) {
+        draw(xPosition+(moving_peach[i].x)*xRatio,yPosition-(moving_peach[i].y)*yRatio,(moving_peach[i].width)*xRatio,(moving_peach[i].height)*yRatio,moving_peach[i].color);
+    }
+}
 
-    draw(xPosition+1*(xRatio),yPosition-(1*yRatio),1*yRatio,14*xRatio,dp); // Draws the dress
-    draw(xPosition+1*(xRatio),yPosition-(3*yRatio),2*yRatio,14*xRatio,lp);
-    draw(xPosition+2*(xRatio),yPosition-(5*yRatio),2*yRatio,12*xRatio,lp);
-    draw(xPosition+2*(xRatio),yPosition-(6*yRatio),1*yRatio,2*xRatio,dp);
-    draw(xPosition+3*(xRatio),yPosition-(10*yRatio),4*yRatio,2*xRatio,dp);
-    draw(xPosition+5*(xRatio),yPosition-(9*yRatio),2*yRatio,2*xRatio,lp);
-    draw(xPosition+4*(xRatio),yPosition-(7*yRatio),2*yRatio,9*xRatio,lp);
-    draw(xPosition+13*(xRatio),yPosition-(7*yRatio),2*yRatio,1*xRatio,dp);
-
-    draw(xPosition+5*(xRatio),yPosition-(13*yRatio),3*yRatio,1*xRatio,s); // Draws the gloves and arms
-    draw(xPosition+6*(xRatio),yPosition-(13*yRatio),2*yRatio,1*xRatio,s);
-    draw(xPosition+7*(xRatio),yPosition-(11*yRatio),1*yRatio,1*xRatio,w);
-    draw(xPosition+6*(xRatio),yPosition-(10*yRatio),1*yRatio,3*xRatio,w);
-    draw(xPosition+8*(xRatio),yPosition-(9*yRatio),1*yRatio,2*xRatio,w);
-    draw(xPosition+9*(xRatio),yPosition-(8*yRatio),1*yRatio,1*xRatio,w);
-    draw(xPosition+11*(xRatio),yPosition-(9*yRatio),2*yRatio,1*xRatio,w);
-    draw(xPosition+12*(xRatio),yPosition-(12*yRatio),4*yRatio,1*xRatio,w);
-    draw(xPosition+13*(xRatio),yPosition-(13*yRatio),1*yRatio,2*xRatio,s);
-    draw(xPosition+13*(xRatio),yPosition-(12*yRatio),2*yRatio,1*xRatio,s);
-
-    draw(xPosition+8*(xRatio),yPosition-(14*yRatio),3*yRatio,3*xRatio,lp); // Draws the chest ornament
-    draw(xPosition+9*(xRatio),yPosition-(14*yRatio),2*yRatio,2*xRatio,y);
-    draw(xPosition+10*(xRatio),yPosition-(14*yRatio),1*yRatio,1*xRatio,b);
-
-    draw(xPosition+3*(xRatio),yPosition-(16*yRatio),2*yRatio,12*xRatio,lp); // Draws the top of the dress 
-    draw(xPosition+9*(xRatio),yPosition-(17*yRatio),1*yRatio,2*xRatio,dp);
-
-    draw(xPosition+2*(xRatio),yPosition-(14*yRatio),3*yRatio,2*xRatio,y); // Draws the hair
-    draw(xPosition+1*(xRatio),yPosition-(17*yRatio),3*yRatio,1*xRatio,y);
-    draw(xPosition+1*(xRatio),yPosition-(18*yRatio),1*yRatio,5*xRatio,y);
-    draw(xPosition+1*(xRatio),yPosition-(19*yRatio),1*yRatio,5*xRatio,y);
-    draw(xPosition+2*(xRatio),yPosition-(22*yRatio),3*yRatio,2*xRatio,y);
-    draw(xPosition+2*(xRatio),yPosition-(25*yRatio),3*yRatio,5*xRatio,y);
-    draw(xPosition+4*(xRatio),yPosition-(26*yRatio),2*yRatio,4*xRatio,y);
-    draw(xPosition+5*(xRatio),yPosition-(27*yRatio),3*yRatio,9*xRatio,y);
-    draw(xPosition+14*(xRatio),yPosition-(26*yRatio),3*yRatio,1*xRatio,y);
-    draw(xPosition+10*(xRatio),yPosition-(24*yRatio),1*yRatio,2*xRatio,y);
-    draw(xPosition+13*(xRatio),yPosition-(18*yRatio),1*yRatio,1*xRatio,y);
-    draw(xPosition+1*(xRatio),yPosition-(22*yRatio),3*yRatio,1*xRatio,y);
-
-    draw(xPosition+8*(xRatio),yPosition-(30*yRatio),2*yRatio,5*xRatio,y); // Draws the crown 
-    draw(xPosition+8*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,b);
-    draw(xPosition+10*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,r);
-    draw(xPosition+12*(xRatio),yPosition-(29*yRatio),1*yRatio,1*xRatio,b);
-
-    draw(xPosition+5*(xRatio),yPosition-(21*yRatio),2*yRatio,1*xRatio,s); // Draws the face
-    draw(xPosition+5*(xRatio),yPosition-(19*yRatio),1*yRatio,1*xRatio,b);
-    draw(xPosition+6*(xRatio),yPosition-(19*yRatio),1*yRatio,1*xRatio,s);
-    draw(xPosition+7*(xRatio),yPosition-(22*yRatio),5*yRatio,2*xRatio,s);
-    draw(xPosition+9*(xRatio),yPosition-(23*yRatio),1*yRatio,1*xRatio,s); // these two lines draw the eyebrows
-    draw(xPosition+12*(xRatio),yPosition-(23*yRatio),1*yRatio,1*xRatio,s);
-    draw(xPosition+10*(xRatio),yPosition-(22*yRatio),2*yRatio,2*xRatio,s);
-    draw(xPosition+9*(xRatio),yPosition-(20*yRatio),3*yRatio,3*xRatio,s);
-    draw(xPosition+12*(xRatio),yPosition-(20*yRatio),2*yRatio,1*xRatio,s);
-    draw(xPosition+13*(xRatio),yPosition-(22*yRatio),3*yRatio,1*xRatio,s);
-    draw(xPosition+10*(xRatio),yPosition-(19*yRatio),1*yRatio,2*xRatio,r);
+void draw(int x,int y,int width,int height,int color[]){
+    gfx_color(color[0],color[1],color[2]);
+    gfx_fill_rectangle(x,y,width,height);
 }
 
 void erase_peach(Peach *peach) {
     gfx_color(0,0,0);
-    gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-60,30,60);
+    gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-60,35,60);
 }
 
 void draw_peach_motion(Peach *peach) {
@@ -926,6 +861,13 @@ void draw_paths() {
     }
 }
 
+void make_key(Key *key) {
+    key->count = 0;
+    key->intro_complete = 0;
+    key->exists = 0;
+    key->caught = 0;
+}
+
 void new_key(Key *key) {
     key->x_pos = 80;
     key->y_pos = height-40-100*5-30;
@@ -969,10 +911,29 @@ int in_bounds(int x, int y) {
 }
 
 void menu_sequence() {
+    int i;
+    int state = 0;
     gfx_color(255,255,255);
-    gfx_text(300,400,"MENU OH YEAH");
+    gfx_text(300,300,"MENU");
+    for (i=-105;i<width;i++) {
+        if (state == 0) {
+            draw_static_peach(i,600,1.5,1);
+            if (i%50 == 0) {
+                state = 1;
+            }
+        }
+        else if (state == 1) {
+            draw_moving_peach(i,600,1.5,1);
+            if (i%50 == 0) {
+                state = 0;
+            }
+        }
+        gfx_flush();
+        usleep(pow(10,3.3));
+        gfx_color(0,0,0);
+        gfx_fill_rectangle(i,600-180,105,180);
+    }
     gfx_flush();
-    usleep(pow(10,6));
 }
 
 void moving_sequence(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, int *motion, int length) {
@@ -983,8 +944,8 @@ void moving_sequence(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, 
 
     while (1) {
         move_ladders(peach,ladders);
-        draw_all_static(mario,luigi,peach,ladders);
         erase_peach(peach);
+        draw_all_static(mario,luigi,peach,ladders);
 
         if (motion[i+1] != 0) {
             peach->is_moving = 1;
@@ -992,7 +953,7 @@ void moving_sequence(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, 
         else {
             if (length == 12 && count > 25) {
                 gfx_color(255,255,255);
-                gfx_text(75,700,"Mario?!!");
+                gfx_text(100,700,"Mario?!!");
             }
             peach->is_moving = 0;
         }
@@ -1027,9 +988,7 @@ void intro_sequence() {
     gfx_color(225,0,0);
     gfx_fill_rectangle(155,height-115-150,90,150);
 
-    gfx_color(255,0,230);
-    gfx_fill_rectangle(455,height-115-150,90,150);
-
+    draw_static_peach(455,height-115,1,-1);
 
     gfx_color(255,200,0);
     gfx_fill_rectangle(330,height-115-180,20,180);
@@ -1072,8 +1031,7 @@ void play_sequence() {
     gfx_color(225,0,0);
     gfx_fill_rectangle(155,height-115-150,90,150);
 
-    gfx_color(255,0,230);
-    gfx_fill_rectangle(455,height-115-150,90,150);
+    draw_static_peach(455,height-115,1,-1);
 
     gfx_color(255,200,0);
     gfx_fill_rectangle(330,height-115-180,20,180);
@@ -1114,7 +1072,7 @@ int losing_sequence() {
     gfx_color(255,200,0);
     gfx_fill_rectangle(330,height-115-180,20,180);
 
-    print_text(0,410," DAMN IT PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
+    print_text(0,410," WHAT THE FC BARCELONA PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
     print_text(0,410," ARE YOU GOING TO TRY AGAIN? - - OR ARE YOU A LITTLE BITCH?");
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
@@ -1138,8 +1096,7 @@ void ending_sequence() {
     gfx_color(225,0,0);
     gfx_fill_rectangle(155,height-115-150,90,150);
 
-    gfx_color(255,0,230);
-    gfx_fill_rectangle(455,height-115-150,90,150);
+    draw_static_peach(455,height-115,1,-1);
 
     gfx_color(255,200,0);
     gfx_fill_rectangle(330,height-115-180,20,180);
