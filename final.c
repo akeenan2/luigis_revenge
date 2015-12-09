@@ -14,7 +14,6 @@ typedef struct Fireball_S {
     double angle;
     double radius;
     double bounce_count;
-    // velocity = 
 } Fireball;
 
 typedef struct Ladder_S {
@@ -93,7 +92,7 @@ void reset_all(Fireball *,int *,Mario *,Luigi *,Peach *,Ladder *,Key *);
 void new_fireball(Fireball *,int);
 void draw_fireballs(Fireball *,int);
 void draw_fireball(Fireball *,int);
-void erase_fireball(Fireball *,int);
+void erase_fireballs(Fireball *,int);
 void move_fireballs(Fireball *,Peach *,int *);
 void remove_fireball(Fireball *,int,int);
 int collided(Fireball *,Peach *,int);
@@ -114,7 +113,7 @@ void draw_static_peach(int,int,double,int);
 void draw_moving_peach(int,int,double,int);
 void draw(int,int,int,int,int []);
 void erase_peach(Peach *);
-void draw_peach_motion(Peach *);
+void draw_peach_motion(Mario *,Luigi *,Peach *,Ladder *);
 void move_peach(Mario *,Luigi *,Peach *,Ladder *,Key *,int,int);
 void peach_jump(Mario *,Luigi *,Peach *,Ladder *);
 
@@ -184,6 +183,7 @@ int main() {
 
     while (1) {
         erase_peach(&peach);
+        erase_fireballs(fireballs,numFireballs);
         move_ladders(&peach,ladders);
         draw_all_static(&mario,&luigi,&peach,ladders);
 
@@ -362,15 +362,17 @@ void draw_fireball(Fireball *fireballs, int f) {
     gfx_fill_circle(fireballs[f].x_pos,fireballs[f].y_pos,fireballs[f].radius);
 }
 
-void erase_fireball(Fireball *fireballs, int f) {
-    gfx_color(0,0,0);
-    gfx_fill_circle(fireballs[f].x_pos,fireballs[f].y_pos,fireballs[f].radius);
+void erase_fireballs(Fireball *fireballs, int numFireballs) {
+    int i;
+    for (i=0;i<numFireballs;i++) {
+        gfx_color(0,0,0);
+        gfx_fill_circle(fireballs[i].x_pos,fireballs[i].y_pos,fireballs[i].radius);
+    }
 }
 
 void move_fireballs(Fireball *fireballs, Peach *peach, int *numFireballs) {
     int i;
     for (i=0;i<(*numFireballs);i++) {
-        erase_fireball(fireballs,i);
         fireballs[i].x_pos += cos(fireballs[i].angle);
         fireballs[i].y_pos += sin(fireballs[i].angle);
 
@@ -425,7 +427,7 @@ void draw_mario(Mario *mario, Peach *peach) {
         gfx_color(225,0,0);
         gfx_fill_rectangle(mario->x_pos,mario->y_pos-50,30,50);
 
-        gfx_color(0,0,0);
+        gfx_color(0,0,0); // erase help text
         gfx_fill_rectangle(mario->x_pos-10,mario->y_pos-110,50,25);
 
         if (peach->is_jumping == 0) {
@@ -578,7 +580,8 @@ void move_peach(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *
                 if (peach->is_jumping == 0) { // if not jumping, move horizontally
                     peach->x_pos = x;
                     peach->y_pos = y;
-                    draw_peach_motion(peach);
+                    draw_peach_motion(mario,luigi,peach,ladders);
+                    return;
                 }
             }
             else if (ch_y == -1) { // moving upwards
@@ -660,32 +663,11 @@ void draw_peach(Peach *peach) {
     else if (peach->draw_position == 2) { // climbing ladder
         draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
     }
-    else if (peach->is_moving == 1) { // moving
-        if (peach->draw_position == 0) { // static draw
-            draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
-
-            if (peach->draw_count < 50) {
-                peach->draw_count++;
-            } 
-            else {
-                peach->draw_count = 0;
-                peach->draw_position = 1;
-            }
-        }
-        else if (peach->draw_position == 1) { // moving draw
-            draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
-
-            if (peach->draw_count < 50) {
-                peach->draw_count++;
-            } 
-            else {
-                peach->draw_count = 0;
-                peach->draw_position = 0;
-            }
-        }
-    }
-    else { // not doing anything
+    else if (peach->draw_position == 0) { // static motion
         draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+    }
+    else if (peach->draw_position == 1) { // moving
+        draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
     }
 }
 
@@ -719,17 +701,45 @@ void erase_peach(Peach *peach) {
     gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-60,35,60);
 }
 
-void draw_peach_motion(Peach *peach) {
+void draw_peach_motion(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders) {
     double x_pos = peach->x_pos;
     int i;
-    for (i=(peach->speed-1);i>0;i--) {
-        peach->x_pos = x_pos+i*peach->move_direction;
+    if (peach->is_moving == 1) {
+        for (i=peach->speed;i>=0;i--) {
+            erase_peach(peach);
+            draw_all_static(mario,luigi,peach,ladders);
+            peach->x_pos = x_pos+i*peach->move_direction;
+            if (peach->draw_position == 0) { // static draw
+                draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+            }
+            else {
+                draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+            }
+            gfx_flush();
+            usleep(pow(10,3.5));
+        }
+
+        if (peach->draw_count < 10) {
+            peach->draw_count+=2;
+        } 
+        else {
+            if (peach->draw_position == 0) {
+                peach->draw_position = 1;
+            }
+            else if (peach->draw_position == 1) {
+                peach->draw_position = 0;
+            }
+            peach->draw_count = 0;
+        }
+
+        peach->x_pos = x_pos;
+        draw_peach(peach);
+    }
+    else {
         draw_peach(peach);
         gfx_flush();
-        usleep(pow(10,3.5));
-        erase_peach(peach);
+        usleep(pow(10,3.5)*9);
     }
-    peach->x_pos = x_pos;
 }
 
 int catch_key(Peach *peach, Key *key) {
@@ -898,22 +908,22 @@ void menu_sequence() {
     int i;
     int state = 0;
     gfx_color(255,255,255);
-    gfx_text(300,300,"MENU");
+    gfx_text(350,300,"MENU");
     for (i=-105;i<width;i++) {
         if (state == 0) {
             draw_static_peach(i,600,1.5,1);
-            if (i%50 == 0) {
+            if (i%100 == 0) {
                 state = 1;
             }
         }
         else if (state == 1) {
             draw_moving_peach(i,600,1.5,1);
-            if (i%50 == 0) {
+            if (i%100 == 0) {
                 state = 0;
             }
         }
         gfx_flush();
-        usleep(pow(10,3.3));
+        usleep(pow(10,3));
         gfx_color(0,0,0);
         gfx_fill_rectangle(i,600-180,105,180);
     }
@@ -925,6 +935,7 @@ void moving_sequence(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, 
     int count = 0;
 
     // motion array stores: 0 - places moved, 1 - direction moved, 2 - x initial position, 3 - y initial position
+    peach->move_direction = 0;
 
     while (1) {
         move_ladders(peach,ladders);
@@ -951,14 +962,14 @@ void moving_sequence(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, 
             i+=4;
         }
 
-        draw_peach(peach);
+        draw_peach_motion(mario,luigi,peach,ladders);
         gfx_flush();
 
         if (i>=length) {
             return;
         }
 
-        usleep(pow(10,3.5)*9);
+        usleep(pow(10,3.5));
     }
 }
 
