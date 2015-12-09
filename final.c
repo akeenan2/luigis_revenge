@@ -294,7 +294,6 @@ int main() {
         if (difficulty >= 3) { // if hard difficulty level
             if (key.intro_complete == 1 && trap.exists == 0) { // if intro completed and trap doesn't exist
                 if (rand()%100 == 0) {
-                    printf("making a trap\n");
                     new_trap(&trap);
                 }
             }
@@ -437,8 +436,8 @@ void move_fireballs(Fireball *fireballs, Peach *peach, int *numFireballs) {
         else if (collided(fireballs,peach,i)) {
             remove_fireball(fireballs,i,*numFireballs);
             (*numFireballs)--;
-            draw_lives(peach);
             peach->num_lives--;
+            draw_lives(peach);
             gfx_flush();
         }
 
@@ -458,14 +457,18 @@ void remove_fireball (Fireball *fireballs, int f, int numFireballs) {
 }
 
 int collided (Fireball *fireballs, Peach *peach, int f) {
-    double change_x,change_y,r;
+    double change_x,change_y,distance,angle,peach_distance;
     change_x = fireballs[f].x_pos - (peach->x_pos+(35/2.));
-    change_y = fireballs[f].y_pos - (peach->y_pos+peach->jump_height-(60/2.));
+    change_y = fireballs[f].y_pos - (peach->y_pos-peach->jump_height-peach->fall_height-(60/2.));
 
-    r = sqrt(pow(change_x,2)+pow(change_y,2));
+    distance = sqrt(pow(change_x,2)+pow(change_y,2));
 
-    if (fireballs[f].radius + 45 >= r) {
-        return 0;
+    angle = atan(change_y/change_x);
+    peach_distance = abs(30.*sin(angle));
+
+    if (fireballs[f].radius + peach_distance >= distance) {
+        printf("Collision\n");
+        return 1;
     }
 
     return 0;
@@ -662,7 +665,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
                     peach->draw_position = 2;
                 }
                 else { // not between a ladder
-                    if (peach->jump_height == 0) { // if currently not jumping
+                    if (peach->jump_height == 0 && peach->is_falling == 0) { // if currently not jumping or falling
                         peach->is_jumping = 1;
                     }
                 }
@@ -728,7 +731,6 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
 }
 
 int peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap) {
-    printf("falling\n");
     int i;
     if (peach->fall_height < 100) {
         erase_peach(peach);
@@ -1146,10 +1148,14 @@ void moving_sequence(Fireball *fireballs, int numFireballs, Mario *mario, Luigi 
         draw_all_static(mario,luigi,peach,ladders,key,trap);
 
         if (motion[i+1] == 0) {
-            if (length == 12 && count > 25) {
+            if (count > 25) {
                 gfx_color(255,255,255);
                 gfx_text(100,700,"Mario?!!");
             }
+        }
+        else if (motion[i+1] == -4 && length == 12) {
+            gfx_color(255,255,255);
+            gfx_text(100,700,"Mario?!!");
         }
         else {
             if (peach->draw_count < 25) {
@@ -1227,7 +1233,7 @@ void intro_sequence() {
             print_text(0,100," He's been launching fireballs at any - potential rescuers to scare them off! - - Three hits and it's lights out!");
             print_text(0,100," The floor is also very unstable!! - - Every so often you might find yourself - falling through them...");
             print_text(0,410," So do I get any warning if I'm suddenly - about to drop through a floor?");
-            print_text(0,100," No! The programmers were too lazy to - put anything like that in! - - You're completely defenseless! - - Please still save me...");
+            print_text(0,100," The floor will turn red before - it disappears! - Make sure you're not standing on it - when it does or you'll fall!");
         }
         print_text(0,410," How delightful...");
         gfx_color(0,0,0);
@@ -1305,7 +1311,7 @@ int losing_sequence() {
     gfx_color(255,200,0);
     gfx_fill_rectangle(330,height-115-180,20,180);
 
-    print_text(0,410," WHAT THE FC BARCELONA PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
+    print_text(0,410," PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
     print_text(0,410," ARE YOU GOING TO TRY AGAIN? - - OR ARE YOU A LITTLE BITCH?");
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
