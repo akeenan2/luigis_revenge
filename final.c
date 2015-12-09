@@ -77,6 +77,7 @@ typedef struct Coordinates_S {
 
 int width = 700;
 int height = 800;
+int difficulty;
 
 Coord static_peach[49];
 Coord moving_peach[50];
@@ -907,27 +908,50 @@ int in_bounds(int x, int y) {
 void menu_sequence() {
     int i;
     int state = 0;
-    gfx_color(255,255,255);
-    gfx_text(350,300,"MENU");
-    for (i=-105;i<width;i++) {
+
+    gfx_color(150,0,0); // draw path
+    gfx_fill_rectangle(0,615,width,9);
+    gfx_fill_rectangle(0,600,width,9);
+
+    for (i=-105;i<width+150;i++) {
+        gfx_color(0,0,0); // clear screen as peach moves
+        gfx_fill_rectangle(i-150,0,2,height);
+
         if (state == 0) {
             draw_static_peach(i,600,1.5,1);
-            if (i%100 == 0) {
+            if (i%75 == 0) {
                 state = 1;
             }
         }
         else if (state == 1) {
             draw_moving_peach(i,600,1.5,1);
-            if (i%100 == 0) {
+            if (i%75 == 0) {
                 state = 0;
             }
         }
         gfx_flush();
-        usleep(pow(10,3));
+        usleep(pow(10,3.5));
         gfx_color(0,0,0);
         gfx_fill_rectangle(i,600-180,105,180);
     }
-    gfx_flush();
+    usleep(pow(10,6)/3);
+    gfx_color(255,255,255);
+    gfx_text(275,650,"Select a difficulty level...");
+    gfx_text(115,525,"(1) Easy");
+    gfx_text(310,525,"(2) Medium");
+    gfx_text(515,525,"(3) Hard");
+    draw_static_peach(100,500,1.5,1);
+    draw_static_peach(300,500,1.5,1);
+    draw_static_peach(500,500,1.5,1);
+    char c;
+    do {
+        c = gfx_wait();
+        if (c == '1') { difficulty = 1; }
+        else if (c == '2') { difficulty = 2; }
+        else if (c == '3') { difficulty = 3; }
+    } while (c != '1' && c != '2' && c != '3');
+    clear_screen();
+    usleep(pow(10,6)/3);
 }
 
 void moving_sequence(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, int *motion, int length) {
