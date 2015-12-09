@@ -40,7 +40,7 @@ typedef struct Luigi_S {
 typedef struct Peach_S {
     double x_pos; // bottom left
     double y_pos;
-    int current_path;
+    int path_level;
     int is_climbing;
     int is_moving;
     int move_direction; // 1 - right, -1 - left
@@ -48,6 +48,9 @@ typedef struct Peach_S {
     double jump_height;
     int jump_direction;
     double jump_speed;
+    int is_falling;
+    double fall_height;
+    double fall_speed;
     double speed;
     int draw_count;
     int draw_position;
@@ -62,6 +65,15 @@ typedef struct Key_S {
     int caught;
     int intro_complete;
 } Key;
+
+typedef struct Trap_S {
+    double x_pos;
+    double y_pos;
+    int length;
+    int path_level;
+    int state;
+    int exists;
+} Trap;
 
 // character graphics
 typedef struct Coordinates_S {
@@ -84,10 +96,10 @@ Coord moving_peach[50];
 // function prototypes
 void import_all();
 void set_color(int *,char);
-void initial_make_all(Mario *,Luigi *,Peach *,Ladder *,Key *);
-void draw_all_static(Mario *,Luigi *,Peach *,Ladder *,Key *);
+void initial_make_all(Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
+void draw_all_static(Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
 void draw_lives(Peach *);
-void reset_all(Fireball *,int *,Mario *,Luigi *,Peach *,Ladder *,Key *);
+void reset_all(Fireball *,int *,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
 
 void new_fireball(Fireball *,int);
 void draw_fireballs(Fireball *,int);
@@ -113,10 +125,10 @@ void draw_static_peach(int,int,double,int);
 void draw_moving_peach(int,int,double,int);
 void draw(int,int,int,int,int []);
 void erase_peach(Peach *);
-void draw_peach_motion(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *);
-void move_peach(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,int,int);
-void peach_fall(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *);
-void peach_jump(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *);
+void draw_peach_motion(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
+void move_peach(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,int,int);
+int peach_fall(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
+void peach_jump(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
 
 int catch_key(Peach *,Key *);
 
@@ -128,6 +140,11 @@ void draw_ladder(Ladder *);
 void erase_ladder(Ladder *);
 
 void draw_paths();
+void make_trap(Trap *);
+void new_trap(Trap *);
+void move_trap(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
+void draw_trap(Trap *);
+int check_trap(Peach *,Trap *);
 
 void make_key(Key *);
 void new_key(Key *);
@@ -136,7 +153,7 @@ void move_key(Key *);
 void erase_key(Key *);
 
 void menu_sequence();
-void moving_sequence(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,int *,int);
+void moving_sequence(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,int *,int);
 void intro_sequence();
 void play_sequence();
 int losing_sequence();
@@ -160,32 +177,33 @@ int main() {
     Luigi luigi;
     Peach peach;
     Key key;
+    Trap trap;
 
     gfx_open(width,height,"Princess Peach");
     gfx_clear_color(0,0,0);
     gfx_clear();
 
-    initial_make_all(&mario,&luigi,&peach,ladders,&key);
+    initial_make_all(&mario,&luigi,&peach,ladders,&key,&trap);
     import_all();
 
     int motion1[12] = {78,1,-30,760,    50,0,48,760,   20,-4,48,760};
 
-    moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,motion1,12);
+    moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,motion1,12);
 
     clear_screen();
     menu_sequence();
 
     int motion2[4] = {13,-4,width,160};
 
-    moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,motion2,4);
+    moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,motion2,4);
 
-    peach.current_path = 6; // set position of peach
+    peach.path_level = 6; // set position of peach
 
     while (1) {
         erase_peach(&peach); // erase previous draw
         erase_fireballs(fireballs,numFireballs);
         move_ladders(&peach,ladders); // move ladders
-        draw_all_static(&mario,&luigi,&peach,ladders,&key); // draw all constants
+        draw_all_static(&mario,&luigi,&peach,ladders,&key,&trap); // draw all constants
 
         if (key.exists == 1) { // if key already exists then move
             erase_key(&key);
@@ -215,18 +233,18 @@ int main() {
             userInput = gfx_wait();
             switch(userInput) {
                 case 'w': // move upwards on ladder
-                    move_peach(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,0,-1);
+                    move_peach(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,0,-1);
                 break;
                 case 's': // move downwards on ladder
-                    move_peach(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,0,1);
+                    move_peach(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,0,1);
                 break;
                 case 'a': // move left
                     peach.move_direction = 1;
-                    move_peach(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,-1,0);
+                    move_peach(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,-1,0);
                 break;
                 case 'd': // move right
                     peach.move_direction = -1;
-                    move_peach(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,1,0);
+                    move_peach(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,1,0);
                 break;
                 case 27:
                     return 0;
@@ -242,8 +260,18 @@ int main() {
             draw_peach(&peach);
         }
 
-        if (peach.is_jumping == 1) {
-            peach_jump(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key);
+        if (peach.is_jumping == 1) { // if peach is currently falling
+            peach_jump(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap);
+        }
+
+        if (peach.is_falling == 1) { // if peach is currently falling
+            if (peach_fall(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap) == 0) {
+                return 0; // if dead and done playing
+            }
+        }
+
+        if (trap.exists == 1) { // if trap exists
+            move_trap(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap);
         }
 
         if(catch_key(&peach,&key) == 1) {
@@ -256,7 +284,7 @@ int main() {
         if (peach.num_lives < 1) { // if dead
             clear_screen();
             if (losing_sequence() == 32) { // if trying again
-                reset_all(fireballs,&numFireballs,&mario,&luigi,&peach,ladders,&key);
+                reset_all(fireballs,&numFireballs,&mario,&luigi,&peach,ladders,&key,&trap);
             }
             else { // if done playing
                 return 0;
@@ -264,11 +292,10 @@ int main() {
         }
 
         if (difficulty >= 3) { // if hard difficulty level
-            if (peach.is_climbing == 0 && peach.is_jumping == 0 && key.intro_complete == 1) { // if on the ground and intro completed
-                if (peach.is_moving == 1 && peach.current_path != 0) { // if moving on a floor not the first floor
-                    if (rand()%100 == 0) {
-                        peach_fall(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key);
-                    }
+            if (key.intro_complete == 1 && trap.exists == 0) { // if intro completed and trap doesn't exist
+                if (rand()%100 == 0) {
+                    printf("making a trap\n");
+                    new_trap(&trap);
                 }
             }
         }
@@ -325,19 +352,21 @@ void set_color(int *color_array, char color) {
     }
 }
 
-void initial_make_all(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key) {
+void initial_make_all(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap) {
     make_mario(mario);
     make_luigi(luigi);
     make_peach(peach);
     make_ladders(ladders);
     make_key(key);
+    make_trap(trap);
 }
 
-void draw_all_static(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key) {
+void draw_all_static(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap) {
     draw_mario(mario,peach);
     draw_luigi(luigi);
     draw_platform();
     draw_paths();
+    draw_trap(trap);
     draw_gate();
     draw_ladders(ladders);
     if (key->exists == 1) {
@@ -359,8 +388,8 @@ void draw_lives(Peach *peach) {
     }
 }
 
-void reset_all(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key) {
-    initial_make_all(mario,luigi,peach,ladders,key);
+void reset_all(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap) {
+    initial_make_all(mario,luigi,peach,ladders,key,trap);
     (*numFireballs) = 0;
     key->exists = 0;
     key->intro_complete = 1;
@@ -528,7 +557,7 @@ void draw_gate() {
 void make_peach(Peach *peach) {
     peach->x_pos = 45; 
     peach->y_pos = height-40;
-    peach->current_path = 0;
+    peach->path_level = 0;
     peach->is_climbing = 0;
     peach->is_moving = 0;
     peach->move_direction = 0;
@@ -536,15 +565,18 @@ void make_peach(Peach *peach) {
     peach->jump_height = 0;
     peach->jump_direction = 1;
     peach->jump_speed = 0;
+    peach->is_falling = 0;
+    peach->fall_height = 0;
+    peach->fall_speed = 0;
     peach->speed = 10;
     peach->draw_count = 0;
     peach->draw_position = 0;
     peach->num_lives = 3;
 }
 
-void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, int ch_x, int ch_y) {
+void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap, int ch_x, int ch_y) {
     double x,y;
-    int l = peach->current_path;
+    int l = peach->path_level;
 
     x = peach->x_pos + peach->speed * ch_x;
     y = peach->y_pos + peach->speed * ch_y;
@@ -557,6 +589,12 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
     else if (!in_bounds(x+30,y)) { // if out of right boundary, correct position
         peach->x_pos = width-30;
     }
+    else if (peach->is_falling == 1 && ch_y == 0) { // if falling, allow to move morizontally      
+        peach->x_pos = x;
+        peach->y_pos = y;
+        draw_peach_motion(fireballs,numFireballs,mario,luigi,peach,ladders,key,trap);
+        return;
+    }
     else if ((l == 6 && x < 410) && key->caught == 0) { // restrict movement on fifth level if keys not collected
         peach->x_pos = 410;
         if (key->intro_complete == 0) { // if haven't completed intro and approaching mario
@@ -564,13 +602,14 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
             gfx_flush();
             usleep(pow(10,5.5));
             intro_sequence();
+            trap->exists = 0;
 
             int motion[8] = {74,4,410,160, 20,4,-30,760};
-            moving_sequence(fireballs,numFireballs,mario,luigi,peach,ladders,key,motion,8);
+            moving_sequence(fireballs,numFireballs,mario,luigi,peach,ladders,key,trap,motion,8);
 
-            peach->current_path = 0;
-
+            peach->path_level = 0;
             key->intro_complete = 1;
+
             draw_lives(peach);
             gfx_flush();
         }
@@ -611,7 +650,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
                 if (peach->is_jumping == 0) { // if not jumping, move horizontally
                     peach->x_pos = x;
                     peach->y_pos = y;
-                    draw_peach_motion(fireballs,numFireballs,mario,luigi,peach,ladders,key);
+                    draw_peach_motion(fireballs,numFireballs,mario,luigi,peach,ladders,key,trap);
                     return;
                 }
             }
@@ -634,7 +673,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
                     peach->y_pos = y;
                     peach->is_climbing = 1;
                     peach->draw_position = 2;
-                    (peach->current_path)--; // adjust to lower path
+                    (peach->path_level)--; // adjust to lower path
                 }
             }
         }
@@ -648,7 +687,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
                     peach->is_climbing = 0;
                     peach->draw_position = 0;
                     peach->draw_count = 0;
-                    (peach->current_path)++; // adjust to higher path
+                    (peach->path_level)++; // adjust to higher path
                 }
                 else if (ch_y == 1 && y >= (ladders[l].y_pos)) { // bottom of ladder
                     peach->y_pos = ladders[l].y_pos;
@@ -663,11 +702,11 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
     }
 }
 
-void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key) {
+void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap) {
     int i;
     for (i=0;i<10;i++) {
         erase_peach(peach);
-        draw_all_static(mario,luigi,peach,ladders,key);
+        draw_all_static(mario,luigi,peach,ladders,key,trap);
         draw_fireballs(fireballs,numFireballs);
         if (peach->is_jumping == 1) {
             peach->jump_speed = abs(peach->jump_height-75)/75.; // slow at top and faster at bottom of jump
@@ -688,36 +727,53 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
     }
 }
 
-void peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key) {
+int peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap) {
+    printf("falling\n");
     int i;
-    int fall_y_pos = peach->y_pos + 100;
-    while (peach->y_pos > fall_y_pos) {
+    if (peach->fall_height < 100) {
         erase_peach(peach);
-        draw_all_static(mario,luigi,peach,ladders,key);
+        draw_all_static(mario,luigi,peach,ladders,key,trap);
         draw_fireballs(fireballs,numFireballs);
+        peach->fall_speed = abs(peach->fall_height-125)/125.; // slow at top and faster at bottom of jump
 
-        peach->y_pos++;
+        peach->fall_height+=peach->fall_speed*5;
 
-        draw_moving_peach(peach->x_pos,peach->y_pos,.5,1);
+        draw_peach(peach);
         gfx_flush();
-        usleep(pow(10,3.5));
     }
-    peach->y_pos = fall_y_pos;
-    peach->current_path--;
+    else {
+        peach->y_pos += peach->fall_height;
+        peach->fall_height = 0;
+        peach->is_falling = 0;
+        peach->path_level--; // decrease path level
+        if (peach->path_level < 0) { // if fall off screen then lose
+            clear_screen();
+            if (losing_sequence() == 32) { // if trying again
+                reset_all(fireballs,&numFireballs,mario,luigi,peach,ladders,key,trap);
+            }
+            else { // if done playing, return a 0
+                return 0;
+            }   
+        }
+    }
+    return 1; // return 1 to continue play
 }
 
 void draw_peach(Peach *peach) {
     if (peach->is_jumping == 1) { // jumping
-        draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+        draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height,0.5,peach->move_direction);
+    }
+    else if (peach->is_falling == 1) {
+        draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height,0.5,peach->move_direction);
     }
     else if (peach->draw_position == 2) { // climbing ladder
-        draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+        draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height,0.5,peach->move_direction);
     }
     else if (peach->draw_position == 0) { // static motion
-        draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+        draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height,0.5,peach->move_direction);
     }
     else if (peach->draw_position == 1) { // moving
-        draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+        draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height,0.5,peach->move_direction);
     }
 }
 
@@ -748,23 +804,23 @@ void draw(int x,int y,int width,int height,int color[]){
 
 void erase_peach(Peach *peach) {
     gfx_color(0,0,0);
-    gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height-60,35,60);
+    gfx_fill_rectangle(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height-60,35,60);
 }
 
-void draw_peach_motion(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key) {
+void draw_peach_motion(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap) {
     double x_pos = peach->x_pos;
     int i;
     if (peach->is_moving == 1) {
         for (i=peach->speed;i>=0;i--) {
             erase_peach(peach);
-            draw_all_static(mario,luigi,peach,ladders,key);
+            draw_all_static(mario,luigi,peach,ladders,key,trap);
             draw_fireballs(fireballs,numFireballs);
             peach->x_pos = x_pos+i*peach->move_direction;
             if (peach->draw_position == 0) { // static draw
-                draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+                draw_static_peach(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height,0.5,peach->move_direction);
             }
             else {
-                draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height,0.5,peach->move_direction);
+                draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height,0.5,peach->move_direction);
             }
             gfx_flush();
             usleep(pow(10,3.5));
@@ -867,7 +923,7 @@ void move_ladder(Peach *peach, Ladder *ladder, int l) {
     }
     else {
         ladder->x_pos = x;
-        if (peach->is_climbing == 1 && peach->current_path == l) {
+        if (peach->is_climbing == 1 && peach->path_level == l) {
             erase_peach(peach);
             peach->x_pos += ladder->ch_x * ladder->speed;
         }
@@ -908,6 +964,74 @@ void draw_paths() {
         gfx_fill_rectangle(0,height-40-100*i,width,3);
         gfx_fill_rectangle(0,height-40-100*i+5,width,3);
     }
+}
+
+void make_trap(Trap *trap) {
+    trap->exists = 0;
+    trap->length = 100;
+}
+
+void new_trap(Trap *trap) {
+    trap->x_pos = -1*trap->length;
+    trap->path_level = rand()%4;
+    trap->y_pos = height-40-100*trap->path_level;
+    trap->state = 0;
+    trap->exists = 1;
+}
+
+void move_trap(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap) {
+    if (trap->state == 0) { // warning
+        if (trap->x_pos < width) { // trap door in bounds
+            trap->x_pos+=5;
+            draw_all_static(mario,luigi,peach,ladders,key,trap);
+            draw_fireballs(fireballs,numFireballs);
+            draw_peach(peach);
+        }
+        else {
+            trap->x_pos = -1*trap->length;
+            trap->state = 1;
+        }
+
+    }
+    else if (trap->state == 1) { // drop
+        if (trap->x_pos < width) { // trap door
+            trap->x_pos+=5;
+            draw_all_static(mario,luigi,peach,ladders,key,trap);
+            draw_fireballs(fireballs,numFireballs);
+            draw_peach(peach);
+        }
+        else {
+            trap->exists = 0;
+        }
+
+        if (peach->is_falling == 0 && check_trap(peach,trap) == 1) { // if peach isn't currently falling
+            peach->is_falling = 1;
+        }
+    }
+}
+
+void draw_trap(Trap *trap) {
+    if (trap->exists == 1) { // draw only if trap exists
+        if (trap->state == 0) {
+            gfx_color(255,0,0); // bright red
+        }
+        else if (trap->state == 1) {
+            gfx_color(0,0,0); // black
+        }
+        gfx_fill_rectangle(trap->x_pos,height-40-100*trap->path_level,trap->length,3);
+        gfx_fill_rectangle(trap->x_pos,height-40-100*trap->path_level+5,trap->length,3);
+    }
+}
+
+int check_trap(Peach *peach,Trap *trap) {
+    if (peach->is_climbing == 0 && peach->is_jumping == 0) { // if peach is not jumping or climbing
+        if (peach->path_level == trap->path_level) { // if peach is on the same level as the trap
+            if ((peach->x_pos+18) > trap->x_pos && (peach->x_pos+18) < (trap->x_pos+trap->length)) {
+                return 1;
+            }
+        }
+    }
+    return 0; // don't fall
 }
 
 void make_key(Key *key) {
@@ -1008,7 +1132,7 @@ void menu_sequence() {
     clear_screen();
 }
 
-void moving_sequence(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, int *motion, int length) {
+void moving_sequence(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap, int *motion, int length) {
     int i = 0;
     int count = 0;
 
@@ -1019,7 +1143,7 @@ void moving_sequence(Fireball *fireballs, int numFireballs, Mario *mario, Luigi 
     while (1) {
         move_ladders(peach,ladders);
         erase_peach(peach);
-        draw_all_static(mario,luigi,peach,ladders,key);
+        draw_all_static(mario,luigi,peach,ladders,key,trap);
 
         if (motion[i+1] == 0) {
             if (length == 12 && count > 25) {
@@ -1051,7 +1175,7 @@ void moving_sequence(Fireball *fireballs, int numFireballs, Mario *mario, Luigi 
             i+=4;
         }
 
-        draw_peach_motion(fireballs,numFireballs,mario,luigi,peach,ladders,key);
+        draw_peach_motion(fireballs,numFireballs,mario,luigi,peach,ladders,key,trap);
         gfx_flush();
 
         if (i>=length) {
