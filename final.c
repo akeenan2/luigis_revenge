@@ -263,18 +263,18 @@ int main() {
             }
         }
 
-        if (peach.is_moving == 0 && peach.is_jumping == 0) {
-            usleep(pow(10,3.5)*9);
-        }
-
         if (difficulty >= 3) { // if hard difficulty level
             if (peach.is_climbing == 0 && peach.is_jumping == 0 && key.intro_complete == 1) { // if on the ground and intro completed
                 if (peach.is_moving == 1 && peach.current_path != 0) { // if moving on a floor not the first floor
                     if (rand()%100 == 0) {
-                        printf("GROUND DROPS\n");
+                        peach_fall(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key);
                     }
                 }
             }
+        }
+
+        if (peach.is_moving == 0 && peach.is_jumping == 0) {
+            usleep(pow(10,3.5)*9);
         }
     }
 }
@@ -402,12 +402,12 @@ void move_fireballs(Fireball *fireballs, Peach *peach, int *numFireballs) {
 
         if (!(in_bounds(fireballs[i].x_pos,fireballs[i].y_pos))) {
             remove_fireball(fireballs,i,*numFireballs);
-            numFireballs--;
+            (*numFireballs)--;
         }
 
         else if (collided(fireballs,peach,i)) {
             remove_fireball(fireballs,i,*numFireballs);
-            numFireballs--;
+            (*numFireballs)--;
             draw_lives(peach);
             peach->num_lives--;
             gfx_flush();
@@ -457,7 +457,7 @@ void draw_mario(Mario *mario, Peach *peach) {
         gfx_color(0,0,0); // erase help text
         gfx_fill_rectangle(mario->x_pos-10,mario->y_pos-110,50,25);
 
-        if (peach->is_jumping == 0) {
+        if (peach->is_jumping == 0 && peach->is_moving == 0) {
             if (mario->draw_count < 50) {
                 mario->draw_count++;
             } 
@@ -474,7 +474,7 @@ void draw_mario(Mario *mario, Peach *peach) {
         gfx_color(255,255,255);
         gfx_text(mario->x_pos,mario->y_pos-90,"HELP!!");
         
-        if (peach->is_jumping == 0) {
+        if (peach->is_jumping == 0 && peach->is_moving == 0) {
             if (mario->draw_count < 50) {
                 mario->draw_count++;
             } 
@@ -690,19 +690,20 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
 
 void peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key) {
     int i;
-    int fall_y_pos = peach->y_pos - 100;
+    int fall_y_pos = peach->y_pos + 100;
     while (peach->y_pos > fall_y_pos) {
         erase_peach(peach);
         draw_all_static(mario,luigi,peach,ladders,key);
         draw_fireballs(fireballs,numFireballs);
 
-        peach->y_pos -= 2;
+        peach->y_pos++;
 
-        draw_peach(peach);
+        draw_moving_peach(peach->x_pos,peach->y_pos,.5,1);
         gfx_flush();
         usleep(pow(10,3.5));
     }
     peach->y_pos = fall_y_pos;
+    peach->current_path--;
 }
 
 void draw_peach(Peach *peach) {
@@ -1216,9 +1217,7 @@ void ending_sequence() {
     if (c == 32) {
         gfx_color(0,0,0);
         gfx_fill_rectangle(width-300,height-25,300,25);
-        print_text(0,410," Seriously. - - What do I look like? - - You?");
-        print_text(0,100," Princess...?!");
-        print_text(0,410," Of course I have it! - - Don't tell me that you - doubted my abilities?");
+        print_text(0,410," Of course I did! - - Don't tell me that you doubted - my abilities?");
         print_text(0,100," I was just worried about you! - - I don't know what I'd do - if you got hurt...");
         print_text(0,410," Mario...!");
         print_text(0,100," You said you had the key?");
