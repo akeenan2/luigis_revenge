@@ -384,7 +384,7 @@ int main() {
             }
         }
 
-        if (difficulty >= 3) { // if hard difficulty level
+        if (difficulty >= 2) { // if hard difficulty level
             if (key.intro_complete == 1 && trap.exists == 0) { // if intro completed and trap doesn't exist
                 if (rand()%100 == 0) {
                     new_trap(&trap);
@@ -741,8 +741,8 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
     double x,y;
     int l = peach->path_level;
 
-    x = peach->x_pos + peach->speed * ch_x * (double)(difficulty)/2.;
-    y = peach->y_pos + peach->speed * ch_y * (double)(difficulty)/2.;
+    x = peach->x_pos + peach->speed * ch_x * ceil(difficulty/2.);
+    y = peach->y_pos + peach->speed * ch_y * ceil(difficulty/2.);
 
     peach->is_moving = 1; // peach is moving
     
@@ -780,7 +780,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
             gfx_flush();
 
             // adjust speed of gameplay based on difficulty level selected in introduction
-            if (difficulty == 1) { timing = pow(10,3.5); }
+            if (difficulty == 1) { timing = pow(10,3.3); }
             else if (difficulty == 2) { timing = pow(10,3.3); }
             else if (difficulty == 3) { timing = pow(10,3); }
         }
@@ -882,7 +882,7 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         if (peach->is_jumping == 1) {
             peach->jump_speed = abs(peach->jump_height-125)/100.; // slow at top and faster at bottom of jump
             peach->draw_position = 1;
-            peach->jump_height += peach->jump_direction*peach->jump_speed * ((double)(difficulty)/2.);
+            peach->jump_height += peach->jump_direction*peach->jump_speed;
             if (peach->jump_height >= 90) {
                 peach->jump_direction = -1;
             }
@@ -1211,7 +1211,8 @@ void make_trap(Trap *trap) {
 
 void new_trap(Trap *trap) {
     trap->x_pos = -1*trap->length;
-    trap->path_level = rand()%4;
+    if (difficulty == 3) { trap->path_level = rand()%4; } // can be on the first floor
+    else if (difficulty == 2) { trap->path_level = rand()%3 + 1; } // only the second floor and up
     trap->y_pos = height-40-100*trap->path_level;
     trap->state = 0;
     trap->exists = 1;
@@ -1385,8 +1386,15 @@ void menu_sequence() {
     gfx_fill_rectangle(0,600,width,9);
 
     for (i=-105;i<width+150;i++) {
-        gfx_color(0,0,0); // clear screen as peach moves
-        gfx_fill_rectangle(i-150,0,2,height);
+        gfx_color(255,255,255); // background
+        gfx_text(275,650,"Select a difficulty level...");
+
+        gfx_color(0,0,0); // reveal background
+        gfx_fill_rectangle(i-150,625,width-i,height);
+
+        gfx_color(0,0,0); // erase path
+        gfx_fill_rectangle(i-150,615,1,9);
+        gfx_fill_rectangle(i-150,600,1,9);
 
         gfx_color(255,255,255); // title
         gfx_text(305,100,"Luigi's Revenge");
@@ -1404,18 +1412,30 @@ void menu_sequence() {
             }
         }
         gfx_flush();
-        usleep(timing);
+        usleep(pow(10,3.5));
         gfx_color(0,0,0);
         gfx_fill_rectangle(i,600-180,105,180);
     }
+
     gfx_color(255,255,255);
-    gfx_text(275,650,"Select a difficulty level...");
     gfx_text(115,525,"(1) Easy");
-    gfx_text(310,525,"(2) Medium");
-    gfx_text(515,525,"(3) Hard");
     draw_static_mario(75,500,1.5);
+    gfx_flush();
+    usleep(pow(10,6)/2);
+
+    gfx_color(255,255,255);
+    gfx_text(310,525,"(2) Medium");
     draw_talking_mario(275,475,1.5);
+    gfx_flush();
+    usleep(pow(10,6)/2);
+
+    gfx_color(255,255,255);
+    gfx_text(515,525,"(3) Hard");
     draw_talking_mario(475,425,1.5);
+    gfx_flush();
+    usleep(pow(10,6)/2);
+
+
     char c;
     do {
         c = gfx_wait();
