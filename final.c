@@ -92,12 +92,16 @@ int difficulty;
 
 Coord static_peach[49];
 Coord moving_peach[50];
+Coord static_mario[274];
+Coord talking_mario[296];
 
 // function prototypes
 void import_all();
-void set_color(int *,char);
+void set_peach_color(int *,char);
+void set_mario_color(int *,char);
 void initial_make_all(Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
 void draw_all_static(Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
+void draw_character(int,int,int,int,int []);
 void draw_lives(Peach *);
 void reset_all(Fireball *,int *,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
 
@@ -111,6 +115,9 @@ int collided(Fireball *,Peach *,int);
 
 void make_mario(Mario *);
 void draw_mario(Mario *,Peach *);
+void draw_static_mario(int,int,double);
+void draw_talking_mario(int,int,double);
+void erase_mario(Mario *);
 
 void make_luigi(Luigi *);
 void draw_luigi(Luigi *);
@@ -123,7 +130,6 @@ void reset_peach(Mario *,Luigi *,Peach *,Ladder *);
 void draw_peach(Peach *);
 void draw_static_peach(int,int,double,int);
 void draw_moving_peach(int,int,double,int);
-void draw(int,int,int,int,int []);
 void erase_peach(Peach *);
 void draw_peach_motion(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *);
 void move_peach(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,int,int);
@@ -159,7 +165,7 @@ void play_sequence();
 int losing_sequence();
 void ending_sequence();
 int print_text(int,int,char [1000]);
-int wait_input();
+int wait_input(int,int);
 void clear_screen();
 
 int in_bounds(int,int);
@@ -313,41 +319,59 @@ void import_all() {
     fp = fopen("peach_static.txt","r");
     i = 0;
     while (fscanf(fp,"%i %i %i %i %c",&static_peach[i].x,&static_peach[i].y,&static_peach[i].width,&static_peach[i].height,&color) != EOF) {
-        set_color(static_peach[i].color,color);
+        set_peach_color(static_peach[i].color,color);
         i++;
     }
 
     fp = fopen("peach_moving.txt","r");
     i = 0;
     while (fscanf(fp,"%i %i %i %i %c",&moving_peach[i].x,&moving_peach[i].y,&moving_peach[i].width,&moving_peach[i].height,&color) != EOF) {
-        set_color(moving_peach[i].color,color);
+        set_peach_color(moving_peach[i].color,color);
+        i++;
+    }
+
+    fp = fopen("mario_static.txt","r");
+    i = 0;
+    while (fscanf(fp,"%i %i %i %i %c",&static_mario[i].x,&static_mario[i].y,&static_mario[i].width,&static_mario[i].height,&color) != EOF) {
+        set_mario_color(static_mario[i].color,color);
+        i++;
+    }
+
+    fp = fopen("mario_talking.txt","r");
+    i = 0;
+    while (fscanf(fp,"%i %i %i %i %c",&talking_mario[i].x,&talking_mario[i].y,&talking_mario[i].width,&talking_mario[i].height,&color) != EOF) {
+        set_mario_color(talking_mario[i].color,color);
         i++;
     }
 }
 
-void set_color(int *color_array, char color) {
+void set_peach_color(int *color_array, char color) {
     switch(color) {
-        case 'd':
-            color_array[0] = 255; color_array[1] = 50; color_array[2] = 200;
-        break;
-        case 'l':
-            color_array[0] = 255; color_array[1] = 115; color_array[2] = 180;
-        break;
-        case 'y':
-            color_array[0] = 255; color_array[1] = 225; color_array[2] = 0;
-        break;
-        case 's':
-            color_array[0] = 255; color_array[1] = 180; color_array[2] = 150;
-        break;
-        case 'b':
-            color_array[0] = 0; color_array[1] = 0; color_array[2] = 255;
-        break;
-        case 'r':
-            color_array[0] = 255; color_array[1] = 0; color_array[2] = 0;
-        break;
-        case 'w':
-            color_array[0] = 255; color_array[1] = 255; color_array[2] = 255;
-        break;
+        case 'd': color_array[0] = 255; color_array[1] = 50; color_array[2] = 200; break;
+        case 'l': color_array[0] = 255; color_array[1] = 115; color_array[2] = 180; break;
+        case 'y': color_array[0] = 255; color_array[1] = 225; color_array[2] = 0; break;
+        case 's': color_array[0] = 255; color_array[1] = 180; color_array[2] = 150; break;
+        case 'b': color_array[0] = 0; color_array[1] = 0; color_array[2] = 255; break;
+        case 'r': color_array[0] = 255; color_array[1] = 0; color_array[2] = 0; break;
+        case 'w': color_array[0] = 255; color_array[1] = 255; color_array[2] = 255; break;
+    }
+}
+
+void set_mario_color(int *color_array, char color) {
+    switch(color) {
+        case 'n': color_array[0] = 128; color_array[1] = 216; color_array[2] = 200; break;
+        case 'o': color_array[0] = 64; color_array[1] = 128; color_array[2] = 152; break;
+        case 'p': color_array[0] = 32; color_array[1] = 48; color_array[2] = 136; break;
+        case 'q': color_array[0] = 136; color_array[1] = 88; color_array[2] = 24; break;
+        case 'r': color_array[0] = 248; color_array[1] = 208; color_array[2] = 192; break;
+        case 's': color_array[0] = 248; color_array[1] = 112; color_array[2] = 104; break;
+        case 't': color_array[0] = 248; color_array[1] = 64; color_array[2] = 112; break;
+        case 'u': color_array[0] = 248; color_array[1] = 216; color_array[2] = 112; break;
+        case 'v': color_array[0] = 176; color_array[1] = 40; color_array[2] = 96; break;
+        case 'w': color_array[0] = 80; color_array[1] = 0; color_array[2] = 0; break;
+        case 'x': color_array[0] = 216; color_array[1] = 160; color_array[2] = 56; break;
+        case 'y': color_array[0] = 0; color_array[1] = 0; color_array[2] = 0; break;
+        case 'z': color_array[0] = 248; color_array[1] = 248; color_array[2] = 248; break;
     }
 }
 
@@ -372,6 +396,11 @@ void draw_all_static(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, 
         draw_key(key);
     }
     gfx_flush();
+}
+
+void draw_character(int x,int y,int width,int height,int color[]){
+    gfx_color(color[0],color[1],color[2]);
+    gfx_fill_rectangle(x,y,width,height);
 }
 
 void draw_lives(Peach *peach) {
@@ -483,8 +512,7 @@ void make_mario(Mario *mario) {
 
 void draw_mario(Mario *mario, Peach *peach) {
     if (mario->draw_position == 0) {
-        gfx_color(225,0,0);
-        gfx_fill_rectangle(mario->x_pos,mario->y_pos-50,30,50);
+        draw_static_mario(mario->x_pos,mario->y_pos,.5);
 
         gfx_color(0,0,0); // erase help text
         gfx_fill_rectangle(mario->x_pos-10,mario->y_pos-110,50,25);
@@ -494,14 +522,15 @@ void draw_mario(Mario *mario, Peach *peach) {
                 mario->draw_count++;
             } 
             else {
+                erase_mario(mario);
                 mario->draw_count = 0;
                 mario->draw_position = 1;
+                draw_talking_mario(mario->x_pos,mario->y_pos,.5);
             }
         }
     }
     else if (mario->draw_position == 1) {
-        gfx_color(150,0,0);
-        gfx_fill_rectangle(mario->x_pos,mario->y_pos-50,30,50);
+        draw_talking_mario(mario->x_pos,mario->y_pos,.5);
 
         gfx_color(255,255,255);
         gfx_text(mario->x_pos,mario->y_pos-90,"HELP!!");
@@ -511,11 +540,38 @@ void draw_mario(Mario *mario, Peach *peach) {
                 mario->draw_count++;
             } 
             else {
+                erase_mario(mario);
                 mario->draw_count = 0;
                 mario->draw_position = 0;
+                draw_static_mario(mario->x_pos,mario->y_pos,.5);
             }
         }
     }
+}
+
+void draw_talking_mario(int xPosition, int yPosition, double ratio) {
+    double xRatio=(140/30)*ratio;
+    double yRatio=(60/15)*ratio;
+
+    int i;
+    for (i=0;i<296;i++) {
+        draw_character(xPosition+(talking_mario[i].x)*xRatio,yPosition-(talking_mario[i].y)*yRatio,(talking_mario[i].width)*xRatio,(talking_mario[i].height)*yRatio,talking_mario[i].color);
+    }
+}
+
+void draw_static_mario(int xPosition, int yPosition, double ratio) {
+    double xRatio=(140/30)*ratio;
+    double yRatio=(60/15)*ratio;
+
+    int i;
+    for (i=0;i<274;i++) {
+        draw_character(xPosition+(static_mario[i].x)*xRatio,yPosition-(static_mario[i].y)*yRatio,(static_mario[i].width)*xRatio,(static_mario[i].height)*yRatio,static_mario[i].color);
+    }
+}
+
+void erase_mario(Mario *mario) {
+    gfx_color(0,0,0);
+    gfx_fill_rectangle(mario->x_pos,mario->y_pos-60,35,60);
 }
 
 void make_luigi(Luigi *luigi) {
@@ -785,7 +841,7 @@ void draw_static_peach(int xPosition, int yPosition, double ratio, int direction
 
     int i;
     for (i=0;i<49;i++) {
-        draw(xPosition+(static_peach[i].x)*xRatio,yPosition-(static_peach[i].y)*yRatio,(static_peach[i].width)*xRatio,(static_peach[i].height)*yRatio,static_peach[i].color);
+        draw_character(xPosition+(static_peach[i].x)*xRatio,yPosition-(static_peach[i].y)*yRatio,(static_peach[i].width)*xRatio,(static_peach[i].height)*yRatio,static_peach[i].color);
     }
 }
 
@@ -795,13 +851,8 @@ void draw_moving_peach(int xPosition, int yPosition, double ratio, int direction
 
     int i;
     for (i=0;i<50;i++) {
-        draw(xPosition+(moving_peach[i].x)*xRatio,yPosition-(moving_peach[i].y)*yRatio,(moving_peach[i].width)*xRatio,(moving_peach[i].height)*yRatio,moving_peach[i].color);
+        draw_character(xPosition+(moving_peach[i].x)*xRatio,yPosition-(moving_peach[i].y)*yRatio,(moving_peach[i].width)*xRatio,(moving_peach[i].height)*yRatio,moving_peach[i].color);
     }
-}
-
-void draw(int x,int y,int width,int height,int color[]){
-    gfx_color(color[0],color[1],color[2]);
-    gfx_fill_rectangle(x,y,width,height);
 }
 
 void erase_peach(Peach *peach) {
@@ -1198,8 +1249,7 @@ void intro_sequence() {
     gfx_fill_rectangle(0,height-100,width,9);
     gfx_fill_rectangle(0,height-115,width,9);
 
-    gfx_color(225,0,0);
-    gfx_fill_rectangle(155,height-115-150,90,150);
+    draw_static_mario(155,height-115,1);
 
     draw_static_peach(455,height-115,1,-1);
 
@@ -1233,7 +1283,7 @@ void intro_sequence() {
             print_text(0,100," He's been launching fireballs at any - potential rescuers to scare them off! - - Three hits and it's lights out!");
             print_text(0,100," The floor is also very unstable!! - - Every so often you might find yourself - falling through them...");
             print_text(0,410," So do I get any warning if I'm suddenly - about to drop through a floor?");
-            print_text(0,100," The floor will turn red before - it disappears! - Make sure you're not standing on it - when it does or you'll fall!");
+            print_text(0,100," The floor will turn red before it - disappears! - - Make sure you're not standing on it - when it does or you'll fall!");
         }
         print_text(0,410," How delightful...");
         gfx_color(0,0,0);
@@ -1254,8 +1304,7 @@ void play_sequence() {
     gfx_fill_rectangle(0,height-100,width,9);
     gfx_fill_rectangle(0,height-115,width,9);
 
-    gfx_color(225,0,0);
-    gfx_fill_rectangle(155,height-115-150,90,150);
+    draw_static_mario(155,height-115,1);
 
     draw_static_peach(455,height-115,1,-1);
 
@@ -1332,8 +1381,7 @@ void ending_sequence() {
     gfx_fill_rectangle(0,height-100,width,9);
     gfx_fill_rectangle(0,height-115,width,9);
 
-    gfx_color(225,0,0);
-    gfx_fill_rectangle(155,height-115-150,90,150);
+    draw_static_mario(155,height-114,1);
 
     draw_static_peach(455,height-115,1,-1);
 
@@ -1376,6 +1424,17 @@ int print_text(int allowEsc, int xPos, char text[1000]) {
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
 
+    if (xPos < 300) { // if mario is speaking
+        gfx_color(0,0,0);
+        gfx_fill_rectangle(155,height-115-120,75,120);
+        draw_talking_mario(155,height-115,1);
+    }
+    else { // if peach is speaking
+        gfx_color(0,0,0);
+        gfx_fill_rectangle(455,height-115-120,75,120);
+        draw_moving_peach(455,height-115,1,-1);
+    }
+
     while(token != NULL) {
         gfx_color(255,255,255);
         gfx_text(xPos,height-500+(i*15),token);
@@ -1385,10 +1444,10 @@ int print_text(int allowEsc, int xPos, char text[1000]) {
         token = strtok(NULL,s);
         i++;
     }
-    return wait_input(allowEsc);
+    return wait_input(allowEsc,xPos);
 }
 
-int wait_input(int allowEsc) {
+int wait_input(int allowEsc, int xPos) {
     char c;
     gfx_color(255,255,255);
     gfx_text(5,height-15,"Press space to proceed...");
@@ -1402,6 +1461,18 @@ int wait_input(int allowEsc) {
     if (allowEsc == 1) {
         gfx_fill_rectangle(0,0,width,20);
     }
+
+    if (xPos < 300) { // if mario was speaking
+        gfx_color(0,0,0);
+        gfx_fill_rectangle(155,height-115-120,75,120);
+        draw_static_mario(155,height-115,1);
+    }
+    else { // if peach was speaking
+        gfx_color(0,0,0);
+        gfx_fill_rectangle(455,height-115-120,75,120);
+        draw_static_peach(455,height-115,1,-1);
+    }
+
     return c;
 }
 
