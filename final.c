@@ -108,6 +108,7 @@ int width = 700; // screen dimensions
 int height = 800;
 int difficulty; // level of gameplay
 double timing; // usleep variable
+int tutorial = 1;
 
 Coord static_peach_right[49];
 Coord moving_peach_right[50];
@@ -529,6 +530,7 @@ void reset_all(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luig
     (*numFireballs) = 0;
     key->exists = 0;
     key->intro_complete = 1;
+    draw_lives(peach);
 }
 
 void new_fireball(Fireball *fireballs, int f) {
@@ -1411,9 +1413,9 @@ void menu_sequence() {
     gfx_text(115,525,"(1) Easy");
     gfx_text(310,525,"(2) Medium");
     gfx_text(515,525,"(3) Hard");
-    draw_static_peach(100,500,1.5,1);
-    draw_static_peach(300,500,1.5,-1);
-    draw_static_peach(500,500,1.5,-1);
+    draw_static_mario(75,500,1.5);
+    draw_talking_mario(275,475,1.5);
+    draw_talking_mario(475,425,1.5);
     char c;
     do {
         c = gfx_wait();
