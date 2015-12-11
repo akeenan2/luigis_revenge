@@ -126,6 +126,8 @@ void initial_make_all(Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,Life *,Coin 
 void draw_all_static(Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,Life *,Coin *);
 void draw_character(int,int,int,int,int []);
 void draw_lives(Peach *);
+void display_score(Coin *);
+char *itoa(int);
 void reset_all(Fireball *,int *,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,Life *,Coin *);
 
 void new_fireball(Fireball *,int);
@@ -318,6 +320,7 @@ int main() {
                     while ((c = gfx_wait()) != 32);
                     gfx_color(0,0,0);
                     gfx_fill_rectangle(250,390,200,50);
+                    gfx_flush();
                 break;
                 case 27: // press esc to quit
                     draw_peach(&peach);
@@ -327,11 +330,10 @@ int main() {
                     gfx_text(315,410,"QUIT GAME?");
                     gfx_text(290,430,"(1) Yes     (2) No");
                     while((c = gfx_wait()) != '1' && c != '2');
-                    if (c == 1) { return 0; }
-                    else if (c == 2) {
-                        gfx_color(0,0,0);
-                        gfx_fill_rectangle(275,390,140,50);
-                    }
+                    if (c == '1') { clear_screen(); return 0; }
+                    gfx_color(0,0,0);
+                    gfx_fill_rectangle(275,390,140,50);
+                    gfx_flush();
                 break;
                 default:
                     peach.is_moving = 0;
@@ -344,6 +346,7 @@ int main() {
         }
 
         if (quit == 1) { // if quitting, skip all next steps and quit
+            clear_screen();
             return 0;
         }
 
@@ -377,6 +380,7 @@ int main() {
             erase_coin(&coin);
             coin.exists = 0;
             coin.count++;
+            display_score(&coin);
         }
 
         gfx_flush();
@@ -534,12 +538,40 @@ void draw_lives(Peach *peach) {
     }
 }
 
+#define INT_DIGITS 19 // enough for 64 bit integer
+void display_score(Coin *coin) {
+    // convert int to string
+    static char buf[INT_DIGITS + 2];
+    char *p = buf + INT_DIGITS + 1; // points to terminating '\0'
+    if (coin->count >= 0) {
+        do {
+            *--p = '0' + (coin->count % 10);
+            coin->count /= 10;
+        } while (coin->count != 0);
+    }
+    else { // i < 0
+        do {
+            *--p = '0' - (coin->count % 10);
+            coin->count /= 10;
+        } while (coin->count != 0);
+        *--p = '-';
+    }
+
+    gfx_color(0,0,0); // erase previous score
+    gfx_fill_rectangle(65,10,150,20);
+    
+    gfx_color(255,255,255);
+    gfx_text(70,25,"Score: ");
+    gfx_text(110,26,p);
+}
+
 void reset_all(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap, Life *life, Coin *coin) {
     initial_make_all(mario,luigi,peach,ladders,key,trap,life,coin);
     (*numFireballs) = 0;
     key->exists = 0;
     key->intro_complete = 1;
     draw_lives(peach);
+    display_score(coin);
 }
 
 void new_fireball(Fireball *fireballs, int f) {
@@ -786,6 +818,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
             key->intro_complete = 1;
 
             draw_lives(peach);
+            display_score(coin);
             gfx_flush();
 
             // adjust speed of gameplay based on difficulty level selected in introduction
@@ -806,6 +839,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
                 if (c == 32) {
                     play_sequence();
                     draw_lives(peach); // redraw lives left
+                    display_score(coin); // redraw score
                 }
             }
             gfx_color(0,0,0);
