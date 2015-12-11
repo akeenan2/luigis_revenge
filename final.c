@@ -91,7 +91,6 @@ typedef struct Coin_S {
     int path_level;
     int exists;
     int radius;
-    int count;
 } Coin;
 
 // character graphics
@@ -110,6 +109,7 @@ int difficulty; // level of gameplay
 double timing; // usleep variable
 int show_controls = 1;
 int quit = 0;
+int score = 0;
 
 Coord static_peach_right[49];
 Coord moving_peach_right[50];
@@ -126,7 +126,7 @@ void initial_make_all(Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,Life *,Coin 
 void draw_all_static(Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,Life *,Coin *);
 void draw_character(int,int,int,int,int []);
 void draw_lives(Peach *);
-void display_score(Coin *);
+void display_score();
 char *itoa(int);
 void reset_all(Fireball *,int *,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,Life *,Coin *);
 
@@ -379,8 +379,8 @@ int main() {
         if (coin.exists == 1 && (collect_coin(&peach,&coin)) == 1) { // if coin exists and peach collects coin
             erase_coin(&coin);
             coin.exists = 0;
-            coin.count++;
-            display_score(&coin);
+            score+=10;
+            display_score();
         }
 
         gfx_flush();
@@ -390,6 +390,8 @@ int main() {
             if (losing_sequence() == 32) { // if trying again
                 reset_all(fireballs,&numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin);
                 menu_sequence();
+                draw_lives(&peach);
+                display_score();
             }
             else { // if done playing
                 return 0;
@@ -404,9 +406,9 @@ int main() {
             }
         }
 
-        if (peach.is_jumping == 0) {
+        //if (peach.is_jumping == 0) {
             usleep(timing*10);
-        }
+        //}
     }
     return 0;
 }
@@ -539,28 +541,30 @@ void draw_lives(Peach *peach) {
 }
 
 #define INT_DIGITS 19 // enough for 64 bit integer
-void display_score(Coin *coin) {
+void display_score() {
+    int integer = score;
     // convert int to string
     static char buf[INT_DIGITS + 2];
     char *p = buf + INT_DIGITS + 1; // points to terminating '\0'
-    if (coin->count >= 0) {
+    if (integer >= 0) {
         do {
-            *--p = '0' + (coin->count % 10);
-            coin->count /= 10;
-        } while (coin->count != 0);
+            *--p = '0' + (integer % 10);
+            integer /= 10;
+        } while (integer != 0);
     }
     else { // i < 0
         do {
-            *--p = '0' - (coin->count % 10);
-            coin->count /= 10;
-        } while (coin->count != 0);
+            *--p = '0' - (integer % 10);
+            integer /= 10;
+        } while (integer != 0);
         *--p = '-';
     }
 
     gfx_color(0,0,0); // erase previous score
     gfx_fill_rectangle(65,10,150,20);
-    
+
     gfx_color(255,255,255);
+    printf("converted integer is %i to %s\n",score,p);
     gfx_text(70,25,"Score: ");
     gfx_text(110,26,p);
 }
@@ -570,8 +574,6 @@ void reset_all(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luig
     (*numFireballs) = 0;
     key->exists = 0;
     key->intro_complete = 1;
-    draw_lives(peach);
-    display_score(coin);
 }
 
 void new_fireball(Fireball *fireballs, int f) {
@@ -818,7 +820,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
             key->intro_complete = 1;
 
             draw_lives(peach);
-            display_score(coin);
+            display_score();
             gfx_flush();
 
             // adjust speed of gameplay based on difficulty level selected in introduction
@@ -839,7 +841,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
                 if (c == 32) {
                     play_sequence();
                     draw_lives(peach); // redraw lives left
-                    display_score(coin); // redraw score
+                    display_score(); // redraw score
                 }
             }
             gfx_color(0,0,0);
@@ -860,6 +862,8 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         else if (c == '2') {
             reset_all(fireballs,&numFireballs,mario,luigi,peach,ladders,key,trap,life,coin);
             menu_sequence();
+            draw_lives(peach);
+            display_score();
         }
     }
     else if (l==5 && x < 300) { // restrict movement on fourth level
@@ -944,7 +948,6 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         }
         draw_peach(peach);
         gfx_flush();
-        usleep(timing);
     }
 }
 
@@ -972,6 +975,8 @@ int peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi
             if (losing_sequence() == 32) { // if trying again
                 reset_all(fireballs,&numFireballs,mario,luigi,peach,ladders,key,trap,life,coin);
                 menu_sequence();
+                draw_lives(peach);
+                display_score();
             }
             else { // if done playing, return a 0
                 return 0;
@@ -1405,7 +1410,6 @@ void erase_life(Life *life) {
 void make_coin(Coin *coin) {
     coin->exists = 0;
     coin->radius = 5;
-    coin->count = 0;
 }
 
 void new_coin(Coin *coin) {
@@ -1660,6 +1664,8 @@ void intro_sequence() {
         if (difficulty == 1) {
             print_text(0,100," He's just standing there - cackling at my misery, really.");
             print_text(0,410," That's it? - - No fireballs? - - No falling floors? - - No anything?");
+            print_text(0,100," There's a few fireballs, I guess... - But they're going so slowly that - if you get hit, it's really no one's - fault but your own...");
+            print_text(0,410," Why is this level so easy?!");
             print_text(0,100," Well if you wanted something harder - you should have chosen it! - - Don't go shooting the messenger!");
         }
         else if (difficulty == 2) {
@@ -1667,14 +1673,19 @@ void intro_sequence() {
             print_text(0,410," Of course I'll save you, Mario! - - What kind of girlfriend would I be - if I left you here...");
             print_text(0,100," Peach...");
             print_text(0,410," Don't look so starstruck! - - So... -- are these fireballs dangerous?");
-            print_text(0,100," Be very careful! - - You only have three chances to be hit - by a fireball before you'll be drained - of all your energy! - - ...And possibly die... - - I don't really know...");  
+            print_text(0,100," Be very careful! - - You only have three chances to be hit - by a fireball before you'll be drained - of all your energy! - - ...And possibly die... - - I don't really know...");
+            print_text(0,100," The floor will also drop out underneath - you every once in a while... - - Make sure you're not standing on it - when it goes red...");
         }
         else if (difficulty == 3) {
-            print_text(0,100," He's been launching fireballs at any - potential rescuers to scare them off! - - Three hits and it's lights out!");
+            print_text(0,100," He's been launching fireballs at any - potential rescuers to scare them off! - - You can be hit only three times before - you're drained off all your energy!");
             print_text(0,100," The floor is also very unstable!! - - Every so often you might find yourself - falling through them...");
             print_text(0,410," So do I get any warning if I'm suddenly - about to drop through a floor?");
             print_text(0,100," The floor will turn red before it - disappears! - - Make sure you're not standing on it - when it does or you'll fall!");
+            print_text(0,100," If you're on the ground floor, you'll - fall to your death...");
         }
+        print_text(0,100," If you happen to lose a life, - mushrooms will start growing on the - floors. - - If you collect one, - you'll get a life back!");
+        print_text(0,100," However, they don't last very long, - so you'll have to hurry!");
+        print_text(0,100," Coins will also appear on the ground. - - If you collect enough, - you might win a special prize!");
         print_text(0,410," How delightful...");
         gfx_color(0,0,0);
         gfx_fill_rectangle(0,0,width,500);
