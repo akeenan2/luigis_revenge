@@ -1539,42 +1539,56 @@ void controls() {
 
 void draw_keyboard() {
     int i;
-
     // first row
-    for (i=0;i<13;i++) {
-        draw_rectangle(29+48*i,470,38,38);
+    for (i=0;i<14;i++) {
+        draw_rectangle(29+49.5*i,471,39,19);
     }
-    draw_rectangle(662,470,56,38);
     // second row
-    draw_rectangle(38,518,56,38);
     for (i=0;i<13;i++) {
-        draw_rectangle(95+48*i,518,38,38);
+        draw_rectangle(29+48*i,510,38,38);
     }
+    draw_rectangle(662,510,56,38);
     // third row
-    draw_rectangle(45,566,71,38);
-    for (i=0;i<11;i++) {
-        draw_rectangle(110+48*i,566,38,38);
+    draw_rectangle(38,558,56,38);
+    for (i=0;i<13;i++) {
+        draw_rectangle(95+48*i,558,38,38);
     }
-    draw_rectangle(655,566,71,38);
     // fourth row
-    draw_rectangle(57,614,95,38);
-    for (i=0;i<10;i++) {
-        draw_rectangle(134+48*i,614,38,38);
+    draw_rectangle(45,606,71,38);
+    for (i=0;i<11;i++) {
+        draw_rectangle(110+48*i,606,38,38);
     }
-    draw_rectangle(643,614,95,38);
+    draw_rectangle(655,606,71,38);
     // fifth row
-    for (i=0;i<3;i++) {
-        draw_rectangle(27+44*i,662,34,38);
+    draw_rectangle(57,654,95,38);
+    for (i=0;i<10;i++) {
+        draw_rectangle(134+48*i,654,38,38);
     }
-    draw_rectangle(164,662,44,38);
-    draw_rectangle(322,662,252,38);
-    draw_rectangle(480,662,44,38);
-    draw_rectangle(529,662,34,38);
+    draw_rectangle(643,654,95,38);
+    // sixth row
+    for (i=0;i<3;i++) {
+        draw_rectangle(27+44*i,702,34,38);
+    }
+    draw_rectangle(164,702,44,38);
+    draw_rectangle(322,702,252,38); // space button
+    draw_rectangle(480,702,44,38);
+    draw_rectangle(529,702,34,38);
 
-    draw_rectangle(575,672,38,19);
-    draw_rectangle(623,672,38,19);
-    draw_rectangle(623,652,38,19);
-    draw_rectangle(671,672,38,19);
+    draw_rectangle(575,712,38,19);
+    draw_rectangle(623,712,38,19);
+    draw_rectangle(623,692,38,19);
+    draw_rectangle(671,712,38,19);
+
+    gfx_color(255,255,255);
+
+    gfx_text(20,475,"esc");
+    gfx_text(75,515,"1");
+    gfx_text(123,515,"2");
+    gfx_text(141,563,"W");
+    gfx_text(108,611,"A");
+    gfx_text(156,611,"S");
+    gfx_text(204,611,"D");
+    gfx_text(310,707,"space");
 
     gfx_flush();
 }
