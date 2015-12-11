@@ -205,7 +205,7 @@ void moving_sequence(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap 
 void intro_sequence();
 void play_sequence();
 int losing_sequence();
-int ending_sequence();
+char ending_sequence();
 int print_text(int,int,char [1000]);
 int wait_input(int,int);
 void clear_screen();
@@ -253,7 +253,7 @@ int main() {
     moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin,motion2,4);
     peach.path_level = 6; // set position of peach
 
-    while (1) {
+    while (quit == 0) { // while not quitting the game
         erase_peach(&peach); // erase previous draw
         erase_fireballs(fireballs,numFireballs);
         move_ladders(&peach,ladders); // move ladders
@@ -343,6 +343,10 @@ int main() {
             draw_peach(&peach);
         }
 
+        if (quit == 1) { // if quitting, skip all next steps and quit
+            return 0;
+        }
+
         if (peach.is_jumping == 1) { // if peach is currently falling
             peach_jump(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin);
         }
@@ -400,6 +404,7 @@ int main() {
             usleep(timing*10);
         }
     }
+    return 0;
 }
 
 void import_all() {
@@ -1373,6 +1378,7 @@ void new_coin(Coin *coin) {
     coin->x_pos = rand()%(width-2*coin->radius) + coin->radius;
     coin->path_level = rand()%4;
     coin->y_pos = height - 40 - 100*coin->path_level - coin->radius;
+    coin->exists = 1;
 }
 
 void draw_coin(Coin *coin) {
@@ -1723,7 +1729,7 @@ int losing_sequence() {
     return c;
 }
 
-int ending_sequence() {
+char ending_sequence() {
     char c;
     clear_screen();
     gfx_color(150,0,0);
