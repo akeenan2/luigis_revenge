@@ -108,7 +108,8 @@ int width = 700; // screen dimensions
 int height = 800;
 int difficulty; // level of gameplay
 double timing; // usleep variable
-int tutorial = 1;
+int show_controls = 1;
+int quit = 0;
 
 Coord static_peach_right[49];
 Coord moving_peach_right[50];
@@ -198,12 +199,13 @@ void erase_coin(Coin *);
 
 void menu_sequence();
 void draw_rectangle();
+void controls();
 void draw_keyboard();
 void moving_sequence(Fireball *,int,Mario *,Luigi *,Peach *,Ladder *,Key *,Trap *,Life *,Coin *,int *,int);
 void intro_sequence();
 void play_sequence();
 int losing_sequence();
-void ending_sequence();
+int ending_sequence();
 int print_text(int,int,char [1000]);
 int wait_input(int,int);
 void clear_screen();
@@ -235,6 +237,7 @@ int main() {
     gfx_clear();
 
     initial_make_all(&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin);
+
     import_all();
 
     int motion1[12] = {78,1,-30,760,    50,0,48,760,   20,-6,48,760};
@@ -378,6 +381,7 @@ int main() {
             clear_screen();
             if (losing_sequence() == 32) { // if trying again
                 reset_all(fireballs,&numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin);
+                menu_sequence();
             }
             else { // if done playing
                 return 0;
@@ -806,11 +810,18 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         }
     }
     else if ((l == 6 && x < 410) && key->caught == 1) { // if approaching mario and key has been caught
+        char c;
         peach->x_pos = 410;
         draw_peach(peach);
         gfx_flush();
         usleep(pow(10,6));
-        ending_sequence();
+        c = ending_sequence();
+
+        if (c == '1') { quit = 1; }
+        else if (c == '2') {
+            reset_all(fireballs,&numFireballs,mario,luigi,peach,ladders,key,trap,life,coin);
+            menu_sequence();
+        }
     }
     else if (l==5 && x < 300) { // restrict movement on fourth level
         peach->x_pos = 300;
@@ -904,7 +915,7 @@ int peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi
         erase_peach(peach);
         draw_all_static(mario,luigi,peach,ladders,key,trap,life,coin);
         draw_fireballs(fireballs,numFireballs);
-        peach->fall_speed = abs(peach->fall_height-125)/125.; // slow at top and faster at bottom of jump
+        peach->fall_speed = abs(peach->fall_height-125)/125.; // slow at top and faster at bottom of fall
 
         peach->fall_height+=peach->fall_speed*5;
 
@@ -921,6 +932,7 @@ int peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi
             mario->draw_count = 50; // ensure that mario is drawn
             if (losing_sequence() == 32) { // if trying again
                 reset_all(fireballs,&numFireballs,mario,luigi,peach,ladders,key,trap,life,coin);
+                menu_sequence();
             }
             else { // if done playing, return a 0
                 return 0;
@@ -1445,52 +1457,80 @@ void menu_sequence() {
     } while (c != '1' && c != '2' && c != '3');
 
     clear_screen();
+    if (show_controls == 1) {
+        controls();
+        clear_screen();
+    }
 }
 
 void draw_rectangle(int x, int y, int w, int h) {
+    gfx_color(150,0,0);
+    gfx_fill_rectangle(x-w/2,y-h/2,w,h);
+    gfx_color(100,0,0);
     gfx_line(x-w/2,y-h/2,x+w/2,y-h/2);
     gfx_line(x+w/2,y-h/2,x+w/2,y+h/2);
     gfx_line(x+w/2,y+h/2,x-w/2,y+h/2);
     gfx_line(x-w/2,y+h/2,x-w/2,y-h/2);
 }
 
+void controls() {
+    gfx_color(255,255,255);
+
+    gfx_text(310,155,"Controls");
+    draw_keyboard();
+
+    gfx_color(255,255,255);
+
+    gfx_text(150,225,"'A' - move right");
+    gfx_text(150,250,"'D' - move left");
+    gfx_text(150,275,"'W' - climb up ladder / jump");
+    gfx_text(150,300,"'S' - climb down ladder");
+    gfx_text(400,225,"'space' - pause game");
+    gfx_text(400,250,"'esc' - quit game");
+
+    gfx_text(225,425,"Press any key to continue to the game...");
+    gfx_wait();
+    show_controls = 0; // only show controls once
+}
+
 void draw_keyboard() {
     int i;
+
     // first row
     for (i=0;i<13;i++) {
-        draw_rectangle(29+48*i,170,38,38);
+        draw_rectangle(29+48*i,470,38,38);
     }
-    draw_rectangle(662,170,56,38);
+    draw_rectangle(662,470,56,38);
     // second row
-    draw_rectangle(38,218,56,38);
+    draw_rectangle(38,518,56,38);
     for (i=0;i<13;i++) {
-        draw_rectangle(95+48*i,218,38,38);
+        draw_rectangle(95+48*i,518,38,38);
     }
     // third row
-    draw_rectangle(45,266,71,38);
+    draw_rectangle(45,566,71,38);
     for (i=0;i<11;i++) {
-        draw_rectangle(110+48*i,266,38,38);
+        draw_rectangle(110+48*i,566,38,38);
     }
-    draw_rectangle(655,266,71,38);
+    draw_rectangle(655,566,71,38);
     // fourth row
-    draw_rectangle(57,314,95,38);
+    draw_rectangle(57,614,95,38);
     for (i=0;i<10;i++) {
-        draw_rectangle(134+48*i,314,38,38);
+        draw_rectangle(134+48*i,614,38,38);
     }
-    draw_rectangle(643,314,95,38);
+    draw_rectangle(643,614,95,38);
     // fifth row
     for (i=0;i<3;i++) {
-        draw_rectangle(27+44*i,362,34,38);
+        draw_rectangle(27+44*i,662,34,38);
     }
-    draw_rectangle(164,362,44,38);
-    draw_rectangle(322,362,252,38);
-    draw_rectangle(480,362,44,38);
-    draw_rectangle(529,362,34,38);
+    draw_rectangle(164,662,44,38);
+    draw_rectangle(322,662,252,38);
+    draw_rectangle(480,662,44,38);
+    draw_rectangle(529,662,34,38);
 
-    draw_rectangle(575,372,38,19);
-    draw_rectangle(623,372,38,19);
-    draw_rectangle(623,352,38,19);
-    draw_rectangle(671,372,38,19);
+    draw_rectangle(575,672,38,19);
+    draw_rectangle(623,672,38,19);
+    draw_rectangle(623,652,38,19);
+    draw_rectangle(671,672,38,19);
 
     gfx_flush();
 }
@@ -1683,7 +1723,7 @@ int losing_sequence() {
     return c;
 }
 
-void ending_sequence() {
+int ending_sequence() {
     char c;
     clear_screen();
     gfx_color(150,0,0);
@@ -1709,14 +1749,21 @@ void ending_sequence() {
         print_text(0,410," Mario...!");
         print_text(0,100," You said you had the key?");
         print_text(0,410," Oh. - - Yes. - - I'll unlock the gate now...");
-        gfx_color(0,0,0);
-        gfx_fill_rectangle(0,0,width,500);
-        gfx_color(255,255,255);
-        gfx_text(5,height-15,"Press space to return to the game...");
-        gfx_flush();
-        while (gfx_wait() != 32);
+
     }
+    gfx_color(0,0,0);
+    gfx_fill_rectangle(0,0,width,500);
+    gfx_color(0,0,0);
+    gfx_fill_rectangle(330,height-115-180,20,180);
+    gfx_color(255,255,255);
+    gfx_text(235,200,"Congratulations! You've beat the game!");
+    gfx_text(255,250,"Would you like to play again?");
+    gfx_text(215,300,"(1) Yes, restart game      (2) No, quit game");
+    gfx_flush();
+    while ((c = gfx_wait()) != '1' && c != '2');
     clear_screen();
+
+    return c;
 }
 
 int print_text(int allowEsc, int xPos, char text[1000]) {
