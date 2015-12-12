@@ -1802,8 +1802,8 @@ int losing_sequence() {
 
     draw_cage(190,height-115,2);
 
-    print_text(0,100," PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
-    print_text(0,100," ARE YOU GOING TO TRY AGAIN? - - OR ARE YOU A LITTLE BITCH?");
+    print_text(0,200," PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
+    print_text(0,200," ARE YOU GOING TO TRY AGAIN? - - OR ARE YOU A LITTLE BITCH?");
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
     gfx_color(255,255,255);
@@ -1878,7 +1878,7 @@ char ending_sequence() {
     gfx_color(255,255,255);
     gfx_text(105,height-115-150,"Peach! You've saved me!");
     gfx_flush();
-    usleep(pow(10,6));
+    usleep(pow(10,6)*2);
 
     gfx_color(0,0,0);
     gfx_fill_rectangle(100,height-115-170,200,30);
@@ -1901,6 +1901,8 @@ char ending_sequence() {
         gfx_color(0,0,0);
         gfx_fill_rectangle(i,height-115-120,70,120);
     }
+
+    usleep(pow(10,6)*2);
 
     int j = 0;
     for(i=-150;i<345;i++) {
@@ -1948,7 +1950,7 @@ int print_text(int allowEsc, int xPos, char text[1000]) {
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
 
-    if (xPos < 150) { // if mario is speaking
+    if (xPos < 300) { // if mario is speaking
         gfx_color(0,0,0);
         gfx_fill_rectangle(155,height-115-120,75,120);
         draw_talking_mario(155,height-115,1);
