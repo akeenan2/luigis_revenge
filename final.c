@@ -149,6 +149,7 @@ void draw_luigi(Luigi *);
 
 void draw_platform();
 void draw_cage(int,int,double);
+void erase_cage(int,int,double);
 
 void make_peach(Peach *);
 void reset_peach(Mario *,Luigi *,Peach *,Ladder *);
@@ -208,6 +209,7 @@ void intro_sequence();
 void play_sequence();
 int losing_sequence();
 char ending_sequence();
+void draw_heart(int,int,double);
 int print_text(int,int,char [1000]);
 int wait_input(int,int);
 void clear_screen();
@@ -245,6 +247,7 @@ int main() {
     int motion1[12] = {78,1,-30,760,    50,0,48,760,   20,-6,48,760};
     mario.draw_count = 50; // ensure that mario is drawn
 
+ending_sequence();
     moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin,motion1,12);
 
     clear_screen();
@@ -772,6 +775,21 @@ void draw_cage(int x, int y, double ratio) {
     gfx_color(0,0,0);
     gfx_fill_circle(x+31*ratio,y-30*ratio,2*ratio);
     gfx_fill_rectangle(x+31*ratio,y-30*ratio,1*ratio,5*ratio);
+}
+
+void erase_cage(int x, int y, double ratio) {
+    gfx_color(0,0,0);
+    gfx_fill_rectangle(x+34*ratio,y-70*ratio,1*ratio,70*ratio);
+    gfx_fill_rectangle(x+30*ratio,y-68*ratio,3*ratio,68*ratio);
+    gfx_fill_rectangle(x+28*ratio,y-64*ratio,1*ratio,64*ratio);
+
+    gfx_fill_rectangle(x-32*ratio,y-70*ratio,66*ratio,1*ratio);
+    gfx_fill_rectangle(x-28*ratio,y-68*ratio,58*ratio,3*ratio);
+    gfx_fill_rectangle(x-26*ratio,y-64*ratio,54*ratio,1*ratio);
+
+    gfx_fill_rectangle(x-26*ratio,y-64*ratio,1*ratio,64*ratio);
+    gfx_fill_rectangle(x-30*ratio,y-68*ratio,3*ratio,68*ratio);
+    gfx_fill_rectangle(x-32*ratio,y-70*ratio,1*ratio,70*ratio);
 }
 
 void make_peach(Peach *peach) {
@@ -1736,8 +1754,7 @@ void play_sequence() {
 
     draw_static_peach(455,height-115,1,-1);
 
-    gfx_color(255,200,0);
-    gfx_fill_rectangle(330,height-115-180,20,180);
+    draw_cage(190,height-115,2);
 
     gfx_flush();
     if (difficulty == 1) {
@@ -1784,8 +1801,7 @@ int losing_sequence() {
 
     draw_talking_mario(155,height-115,1);
 
-    gfx_color(255,200,0);
-    gfx_fill_rectangle(330,height-115-180,20,180);
+    draw_cage(190,height-115,2);
 
     print_text(0,100," PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
     print_text(0,100," ARE YOU GOING TO TRY AGAIN? - - OR ARE YOU A LITTLE BITCH?");
@@ -1808,12 +1824,11 @@ char ending_sequence() {
     gfx_fill_rectangle(0,height-100,width,9);
     gfx_fill_rectangle(0,height-115,width,9);
 
-    draw_static_mario(155,height-114,1);
+    draw_static_mario(155,height-115,1);
 
     draw_static_peach(455,height-115,1,-1);
 
-    gfx_color(255,200,0);
-    gfx_fill_rectangle(330,height-115-180,20,180);
+    draw_cage(190,height-115,2);
 
     gfx_flush();
 
@@ -1827,12 +1842,83 @@ char ending_sequence() {
         print_text(0,410," Mario...!");
         print_text(0,100," You said you had the key?");
         print_text(0,410," Oh. - - Yes. - - I'll unlock the gate now...");
-
     }
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
+    gfx_color(255,255,255);
+
+    int state = 0;
+    int i;
+    for (i=0;i<160;i+=1) {
+        if (state == 0) {
+            draw_static_peach(455-i,height-115,1,-1);
+            if (i%50 == 0) {
+                state = 1;
+            }
+        }
+        else if (state == 1) {
+            draw_moving_peach(455-i,height-115,1,-1);
+            if (i%50 == 0) {
+                state = 0;
+            }
+        }
+        gfx_flush();
+        usleep(timing);
+        gfx_color(0,0,0);
+        gfx_fill_rectangle(455-i,height-115-120,70,120);
+    }
+    draw_moving_peach(295,height-115,1,-1);
+    gfx_flush();
+    usleep(pow(10,6));
+
+    draw_static_peach(295,height-115,1,-1);
+    erase_cage(190,height-115,2); // erase cage
+    gfx_flush();
+    usleep(pow(10,6));
+
+    gfx_color(255,255,255);
+    gfx_text(105,height-115-150,"Peach! You've saved me!");
+    gfx_flush();
+    usleep(pow(10,6));
+
     gfx_color(0,0,0);
-    gfx_fill_rectangle(330,height-115-180,20,180);
+    gfx_fill_rectangle(100,height-115-170,200,30);
+
+    for (i=295;i>-75;i-=3) {
+        if (state == 0) {
+            draw_static_peach(i,height-115,1,-1);
+            if (i%50 == 0) {
+                state = 1;
+            }
+        }
+        else if (state == 1) {
+            draw_moving_peach(i,height-115,1,-1);
+            if (i%50 == 0) {
+                state = 0;
+            }
+        }
+        gfx_flush();
+        usleep(timing);
+        gfx_color(0,0,0);
+        gfx_fill_rectangle(i,height-115-120,70,120);
+    }
+
+    int j = 0;
+    for(i=-150;i<345;i++) {
+        if (i>0) {
+            j+=(i%2);
+        }
+        gfx_color(255,0,200);
+        draw_heart(i,600-j,1);
+        gfx_flush();
+        usleep(timing);
+        gfx_color(0,0,0);
+        draw_heart(i,600-j,1);
+    }
+
+    gfx_color(255,0,200);
+    draw_heart(i,600-j,1);
+
     gfx_color(255,255,255);
     gfx_text(235,200,"Congratulations! You've beat the game!");
     gfx_text(255,250,"Would you like to play again?");
@@ -1842,6 +1928,12 @@ char ending_sequence() {
     clear_screen();
 
     return c;
+}
+
+void draw_heart(int x, int y, double ratio) {
+    gfx_fill_rectangle(x-50*ratio,y,50*ratio,50*ratio);
+    gfx_fill_arc(x-50*ratio,y-50*ratio,50*ratio,100*ratio,0,360);
+    gfx_fill_arc(x-50*ratio,y,100*ratio,50*ratio,0,360);
 }
 
 int print_text(int allowEsc, int xPos, char text[1000]) {
@@ -1857,7 +1949,7 @@ int print_text(int allowEsc, int xPos, char text[1000]) {
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
 
-    if (xPos < 300) { // if mario is speaking
+    if (xPos < 150) { // if mario is speaking
         gfx_color(0,0,0);
         gfx_fill_rectangle(155,height-115-120,75,120);
         draw_talking_mario(155,height-115,1);
