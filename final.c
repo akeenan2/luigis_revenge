@@ -148,7 +148,7 @@ void make_luigi(Luigi *);
 void draw_luigi(Luigi *);
 
 void draw_platform();
-void draw_gate();
+void draw_cage(int,int,double);
 
 void make_peach(Peach *);
 void reset_peach(Mario *,Luigi *,Peach *,Ladder *);
@@ -508,7 +508,7 @@ void draw_all_static(Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, 
     draw_platform();
     draw_paths();
     draw_trap(trap);
-    draw_gate();
+    draw_cage(355,height-40-100*6,1);
     draw_ladders(ladders);
     if (coin->exists == 1) {
         draw_coin(coin);
@@ -656,7 +656,7 @@ int collided (Fireball *fireballs, Peach *peach, int f) {
 }
 
 void make_mario(Mario *mario) {
-    mario->x_pos = 325;
+    mario->x_pos = 335;
     mario->y_pos = height-40-100*6;
     mario->draw_count = 50;
     mario->draw_position = 1;
@@ -735,29 +735,43 @@ void draw_luigi(Luigi *luigi) {
 
 void draw_platform() {
     int y = height-40-100*5;
-    int x = 300;
+    int x = 250;
     
     gfx_color(200,200,200);
 
-    gfx_fill_rectangle(x-34,0,2,y);
-    gfx_fill_rectangle(x-2,0,2,y);
+    gfx_fill_rectangle(x+30,0,2,y-100);
+    gfx_fill_rectangle(x+62,0,2,y-100);
 
     double i;
-    for (i=(1/20.);i<(19/20.);i+=(1/20.)) {
-        gfx_fill_rectangle(x-32,y*i,30,2);
+    for (i=(1/13.);i<(12/13.);i+=(1/13.)) {
+        gfx_fill_rectangle(x+32,(y-100)*i,30,2);
     }
 
     gfx_color(150,0,0);
-    gfx_fill_rectangle(x,y-95,400,3);
-    gfx_fill_rectangle(x,y-100,400,3);
+    gfx_fill_rectangle(x,y-95,450,3);
+    gfx_fill_rectangle(x,y-100,450,3);
+
+    gfx_fill_rectangle(x,y-95,15,95);
+
 }
 
-void draw_gate() {
-    int y = height-40-100*6;
-    int x = 390;
-
+void draw_cage(int x, int y, double ratio) {
     gfx_color(255,200,0);
-    gfx_fill_rectangle(x,y-60,10,60);
+    gfx_fill_rectangle(x+34*ratio,y-70*ratio,1*ratio,70*ratio);
+    gfx_fill_rectangle(x+30*ratio,y-68*ratio,3*ratio,68*ratio);
+    gfx_fill_rectangle(x+28*ratio,y-64*ratio,1*ratio,64*ratio);
+
+    gfx_fill_rectangle(x-32*ratio,y-70*ratio,66*ratio,1*ratio);
+    gfx_fill_rectangle(x-28*ratio,y-68*ratio,58*ratio,3*ratio);
+    gfx_fill_rectangle(x-26*ratio,y-64*ratio,54*ratio,1*ratio);
+
+    gfx_fill_rectangle(x-26*ratio,y-64*ratio,1*ratio,64*ratio);
+    gfx_fill_rectangle(x-30*ratio,y-68*ratio,3*ratio,68*ratio);
+    gfx_fill_rectangle(x-32*ratio,y-70*ratio,1*ratio,70*ratio);
+
+    gfx_color(0,0,0);
+    gfx_fill_circle(x+31*ratio,y-30*ratio,2*ratio);
+    gfx_fill_rectangle(x+31*ratio,y-30*ratio,1*ratio,5*ratio);
 }
 
 void make_peach(Peach *peach) {
@@ -866,8 +880,8 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
             display_score();
         }
     }
-    else if (l==5 && x < 300) { // restrict movement on fourth level
-        peach->x_pos = 300;
+    else if (l==5 && x < 265) { // restrict movement on fourth level
+        peach->x_pos = 265;
     }
     else { // any other floor
         if (peach->is_climbing==0) { // not on ladder
@@ -1653,7 +1667,7 @@ void moving_sequence(Fireball *fireballs, int numFireballs, Mario *mario, Luigi 
 void intro_sequence() {
     char c;
     clear_screen();
-    gfx_color(150,0,0);
+    gfx_color(150,0,0); // draw path
     gfx_fill_rectangle(0,height-100,width,9);
     gfx_fill_rectangle(0,height-115,width,9);
 
@@ -1661,8 +1675,7 @@ void intro_sequence() {
 
     draw_static_peach(455,height-115,1,-1);
 
-    gfx_color(255,200,0);
-    gfx_fill_rectangle(330,height-115-180,20,180);
+    draw_cage(190,height-115,2);
 
     gfx_flush();
 
@@ -1774,8 +1787,8 @@ int losing_sequence() {
     gfx_color(255,200,0);
     gfx_fill_rectangle(330,height-115-180,20,180);
 
-    print_text(0,410," PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
-    print_text(0,410," ARE YOU GOING TO TRY AGAIN? - - OR ARE YOU A LITTLE BITCH?");
+    print_text(0,100," PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
+    print_text(0,100," ARE YOU GOING TO TRY AGAIN? - - OR ARE YOU A LITTLE BITCH?");
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
     gfx_color(255,255,255);
