@@ -111,6 +111,7 @@ int show_controls = 1;
 int quit = 0;
 int score = 0;
 
+Coord talking_peach[50];
 Coord static_peach_right[49];
 Coord moving_peach_right[50];
 Coord static_peach_left[49];
@@ -154,6 +155,7 @@ void erase_cage(int,int,double);
 void make_peach(Peach *);
 void reset_peach(Mario *,Luigi *,Peach *,Ladder *);
 void draw_peach(Peach *);
+void draw_talking_peach(int,int,double);
 void draw_static_peach(int,int,double,int);
 void draw_moving_peach(int,int,double,int);
 void draw_static_peach_right(int,int,double);
@@ -243,6 +245,8 @@ int main() {
     initial_make_all(&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin);
 
     import_all();
+
+    ending_sequence();
 
     int motion1[12] = {78,1,-30,760,    50,0,48,760,   20,-6,48,760};
     mario.draw_count = 50; // ensure that mario is drawn
@@ -419,6 +423,13 @@ void import_all() {
     int i;
     char color;
     FILE *fp;
+
+    fp = fopen("peach_talking.txt","r");
+    i = 0;
+    while (fscanf(fp,"%i %i %i %i %c",&talking_peach[i].x,&talking_peach[i].y,&talking_peach[i].width,&talking_peach[i].height,&color) != EOF) {
+        set_peach_color(talking_peach[i].color,color);
+        i++;
+    }
 
     fp = fopen("peach_static_right.txt","r");
     i = 0;
@@ -1032,6 +1043,16 @@ void draw_peach(Peach *peach) {
     }
     else if (peach->draw_position == 1) { // moving
         draw_moving_peach(peach->x_pos,peach->y_pos-peach->jump_height+peach->fall_height,0.5,peach->move_direction);
+    }
+}
+
+void draw_talking_peach(int xPosition, int yPosition, double ratio) {
+    double xRatio=(140/30)*ratio;
+    double yRatio=(60/15)*ratio;
+
+    int i;
+    for (i=0;i<50;i++) {
+        draw_character(xPosition+(talking_peach[i].x)*xRatio,yPosition-(talking_peach[i].y)*yRatio,(talking_peach[i].width)*xRatio,(talking_peach[i].height)*yRatio,talking_peach[i].color);
     }
 }
 
@@ -1702,8 +1723,8 @@ void intro_sequence() {
         gfx_color(0,0,0);
         gfx_fill_rectangle(width-300,height-25,300,25);
         print_text(0,410," Mario! - - What happened?!");
-        print_text(0,100," My brother's gone mad! - - He confronted me about seeing us - together and the next thing I know... - - I'm behind this gate!");
-        print_text(0,100," He's been taunting anyone nearby by - throwing them a key to the gate! - - If you grab one, - you can let me out!");
+        print_text(0,100," My brother's gone mad! - - He confronted me about seeing us - together and the next thing I know... - - I'm in this cage!");
+        print_text(0,100," He's been taunting anyone nearby by - throwing them a key to the cage! - - If you grab one, - you can let me out!");
         print_text(0,410," That doesn't sound too difficult... - - Is there some kind of catch?");
         if (difficulty == 1) {
             print_text(0,100," He's just standing there - cackling at my misery, really.");
@@ -1840,7 +1861,7 @@ char ending_sequence() {
         print_text(0,100," I was just worried about you! - - I don't know what I'd do - if you got hurt...");
         print_text(0,410," Mario...!");
         print_text(0,100," You said you had the key?");
-        print_text(0,410," Oh. - - Yes. - - I'll unlock the gate now...");
+        print_text(0,410," Oh. - - Yes. - - I'll unlock the door now...");
     }
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
@@ -1902,7 +1923,7 @@ char ending_sequence() {
         gfx_fill_rectangle(i,height-115-120,70,120);
     }
 
-    usleep(pow(10,6)*2);
+    usleep(pow(10,6));
 
     int j = 0;
     for(i=-150;i<345;i++) {
@@ -1958,7 +1979,7 @@ int print_text(int allowEsc, int xPos, char text[1000]) {
     else { // if peach is speaking
         gfx_color(0,0,0);
         gfx_fill_rectangle(455,height-115-120,75,120);
-        draw_moving_peach(455,height-115,1,-1);
+        draw_talking_peach(455,height-115,1);
     }
 
     while(token != NULL) {
