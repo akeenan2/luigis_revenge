@@ -247,7 +247,6 @@ int main() {
     int motion1[12] = {78,1,-30,760,    50,0,48,760,   20,-6,48,760};
     mario.draw_count = 50; // ensure that mario is drawn
 
-ending_sequence();
     moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin,motion1,12);
 
     clear_screen();
