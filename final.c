@@ -220,7 +220,6 @@ void draw_heart(int,int,double);
 int print_text(int,int,char [1000]);
 int wait_input(int,int);
 void clear_screen();
-
 int in_bounds(int,int);
 
 int main() {
@@ -311,7 +310,7 @@ int main() {
 
         if (numFireballs < 10 && key.intro_complete == 1) { // if can make more fireballs and introduction is complete
             if (difficulty == 1) {
-                if (rand()%120 == 0) {
+                if (numFireballs < 1 || rand()%120 == 0) {
                     luigi.new_fireball = 1;
                     draw_luigi(&luigi);
                     new_fireball(fireballs,numFireballs);
@@ -319,7 +318,7 @@ int main() {
                 }
             }
             else if (difficulty == 2) {
-                if (rand()%60 == 0) {
+                if (numFireballs < 1 || rand()%80 == 0) {
                     luigi.new_fireball = 1;
                     draw_luigi(&luigi);
                     new_fireball(fireballs,numFireballs);
@@ -432,7 +431,7 @@ int main() {
 
         if (peach.num_lives < 1) { // if dead
             clear_screen();
-            if (losing_sequence() == 32) { // if trying again
+            if (losing_sequence() == '1') { // if trying again
                 reset_all(fireballs,&numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin);
                 menu_sequence();
                 draw_lives(&peach);
@@ -456,7 +455,7 @@ int main() {
             }
         }
 
-        if (peach.is_moving == 0 && peach.is_jumping == 0) {
+        if (peach.is_moving == 0) {
             usleep(timing*10);
         }
     }
@@ -1085,7 +1084,7 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         }
         draw_peach(peach);
         gfx_flush();
-        usleep(timing);
+        //usleep(timing);
     }
 }
 
@@ -1111,7 +1110,7 @@ int peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi
             clear_screen();
             mario->draw_count = 50; // ensure that mario is drawn
             luigi->draw_count = 50;
-            if (losing_sequence() == 32) { // if trying again
+            if (losing_sequence() == '1') { // if trying again
                 reset_all(fireballs,&numFireballs,mario,luigi,peach,ladders,key,trap,life,coin);
                 menu_sequence();
                 draw_lives(peach);
@@ -1416,10 +1415,15 @@ void make_trap(Trap *trap) {
 
 void new_trap(Trap *trap) {
     trap->x_pos = -1*trap->length;
-    if (difficulty == 3) { trap->path_level = rand()%4; } // can be on the first floor
-    else if (difficulty == 2) { trap->path_level = rand()%3 + 1; } // only the second floor and up
+    if (difficulty == 3) {
+        trap->path_level = rand()%4; // can be on the first floor
+        trap->state = 1; // no warning
+    }
+    else if (difficulty == 2) {
+        trap->path_level = rand()%3 + 1; // only the second floor and up
+        trap->state = 0; // warning
+    }
     trap->y_pos = height-40-100*trap->path_level;
-    trap->state = 0;
     trap->exists = 1;
 }
 
@@ -1456,11 +1460,11 @@ void move_trap(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi
 
 void draw_trap(Trap *trap) {
     if (trap->exists == 1) { // draw only if trap exists
-        if (trap->state == 0 && difficulty == 1) {
-            gfx_color(255,0,0); // bright red
+        if (trap->state == 0) {
+            gfx_color(255,0,0); // bright red = warning
         }
-        else if ((trap->state == 1 && difficulty == 1) || difficulty != 1) {
-            gfx_color(0,0,0); // black
+        else if (trap->state == 1) {
+            gfx_color(0,0,0); // black = drop
         }
         gfx_fill_rectangle(trap->x_pos,height-40-100*trap->path_level,trap->length,3);
         gfx_fill_rectangle(trap->x_pos,height-40-100*trap->path_level+5,trap->length,3);
@@ -1937,9 +1941,9 @@ int losing_sequence() {
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
     gfx_color(255,255,255);
-    gfx_text(5,height-15,"Press space to try again or 'esc' to quit...");
-    gfx_flush();
-    while ((c = gfx_wait()) != 32 && c != 27);
+    gfx_text(315,300,"TRY AGAIN?");
+    gfx_text(260,350,"(1) Yes            (2) No, Quit");
+    while((c = gfx_wait()) != '1' && c != '2');
 
     clear_screen();
 
