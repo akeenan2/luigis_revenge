@@ -1085,7 +1085,7 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         }
         draw_peach(peach);
         gfx_flush();
-        //usleep(timing);
+        usleep(timing);
     }
 }
 
