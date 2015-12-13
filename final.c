@@ -34,7 +34,7 @@ typedef struct Luigi_S {
     double x_pos;
     double y_pos;
     int draw_count;
-    int draw_position;
+    int new_fireball;
 } Luigi;
 
 typedef struct Peach_S {
@@ -118,6 +118,8 @@ Coord static_peach_left[49];
 Coord moving_peach_left[50];
 Coord static_mario[274];
 Coord talking_mario[296];
+Coord static_luigi[310];
+Coord moving_luigi[369];
 
 // function prototypes
 void import_all();
@@ -147,6 +149,9 @@ void erase_mario(Mario *);
 
 void make_luigi(Luigi *);
 void draw_luigi(Luigi *);
+void draw_static_luigi(int,int,double);
+void draw_moving_luigi(int,int,double);
+void erase_luigi(Luigi *);
 
 void draw_platform();
 void draw_cage(int,int,double);
@@ -223,7 +228,7 @@ int main() {
     srand((unsigned) time(&t));
     char userInput,c;
 
-    Fireball fireballs[15];
+    Fireball fireballs[10];
     int numFireballs = 0;
 
     Ladder ladders[6];
@@ -246,10 +251,9 @@ int main() {
 
     import_all();
 
-    ending_sequence();
-
     int motion1[12] = {78,1,-30,760,    50,0,48,760,   20,-6,48,760};
     mario.draw_count = 50; // ensure that mario is drawn
+    luigi.draw_count = 50;
 
     moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin,motion1,12);
 
@@ -257,6 +261,7 @@ int main() {
     menu_sequence();
 
     mario.draw_count = 50; // ensure that mario is drawn
+    luigi.draw_count = 50;
     int motion2[4] = {13,-4,width,160};
     moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin,motion2,4);
     peach.path_level = 6; // set position of peach
@@ -278,22 +283,56 @@ int main() {
         }
         else if (key.intro_complete == 1) { // if key doesn't exist and introduction is complete
             if (key.caught == 0) { // if key hasn't been caught yet
-                if (rand()%1000 == 0) {
-                    new_key(&key);
+                if (difficulty < 3) {
+                    if (rand()%1000 == 0) {
+                        new_key(&key);
+                    }
+                }
+                else {
+                    if (rand()%2000 == 0) {
+                        new_key(&key);
+                    }
                 }
             }
         }
 
-        if (life.exists == 0 && peach.num_lives < 3 && key.intro_complete == 1) { // if life doesn't exist and peach needs more
-            if (rand()%500 == 0) {
-                new_life(&peach,&life,&coin);
+        if (life.exists == 0 && peach.num_lives < 5 && key.intro_complete == 1) { // if life doesn't exist and peach needs more
+            if (difficulty == 1) { // lives spawn quicker when lower difficulty level
+                if (rand()%200 == 0) {
+                    new_life(&peach,&life,&coin);
+                }
+            }
+            else {
+                if (rand()%400 == 0) {
+                    new_life(&peach,&life,&coin);
+                }
             }
         }
 
-        if (numFireballs < 15 && key.intro_complete == 1) { // if can make more fireballs and introduction is complete
-            if (rand()%100 == 0) {
-                new_fireball(fireballs,numFireballs);
-                numFireballs++;
+        if (numFireballs < 10 && key.intro_complete == 1) { // if can make more fireballs and introduction is complete
+            if (difficulty == 1) {
+                if (rand()%120 == 0) {
+                    luigi.new_fireball = 1;
+                    draw_luigi(&luigi);
+                    new_fireball(fireballs,numFireballs);
+                    numFireballs++;
+                }
+            }
+            else if (difficulty == 2) {
+                if (rand()%60 == 0) {
+                    luigi.new_fireball = 1;
+                    draw_luigi(&luigi);
+                    new_fireball(fireballs,numFireballs);
+                    numFireballs++;
+                }
+            }
+            else if (difficulty == 3) {
+                if (numFireballs < 1 || rand()%30 == 0) { // always have a fireball on screen
+                    luigi.new_fireball = 1;
+                    draw_luigi(&luigi);
+                    new_fireball(fireballs,numFireballs);
+                    numFireballs++;
+                }
             }
         }
 
@@ -404,17 +443,22 @@ int main() {
             }
         }
 
-        if (difficulty >= 2) { // if hard difficulty level
-            if (key.intro_complete == 1 && trap.exists == 0) { // if intro completed and trap doesn't exist
+        if (key.intro_complete == 1 && trap.exists == 0) { // if intro completed and trap doesn't exist
+            if (difficulty == 2) {
                 if (rand()%100 == 0) {
+                    new_trap(&trap);
+                }
+            }
+            else if (difficulty == 3) {
+                if (rand()%50 == 0) {
                     new_trap(&trap);
                 }
             }
         }
 
-        //if (peach.is_jumping == 0) {
+        if (peach.is_moving == 0 && peach.is_jumping == 0) {
             usleep(timing*10);
-        //}
+        }
     }
     return 0;
 }
@@ -470,6 +514,22 @@ void import_all() {
     i = 0;
     while (fscanf(fp,"%i %i %i %i %c",&talking_mario[i].x,&talking_mario[i].y,&talking_mario[i].width,&talking_mario[i].height,&color) != EOF) {
         set_mario_color(talking_mario[i].color,color);
+        i++;
+    }
+
+    fp = fopen("luigi_static.txt","r");
+    i = 0;
+    while (fscanf(fp,"%i %i %i %i %i",&static_luigi[i].x,&static_luigi[i].y,&static_luigi[i].color[0],&static_luigi[i].color[1],&static_luigi[i].color[2]) != EOF) {
+        static_luigi[i].width = 1;
+        static_luigi[i].height = 1;
+        i++;
+    }
+
+    fp = fopen("luigi_moving.txt","r");
+    i = 0;
+    while (fscanf(fp,"%i %i %i %i %i",&moving_luigi[i].x,&moving_luigi[i].y,&moving_luigi[i].color[0],&moving_luigi[i].color[1],&moving_luigi[i].color[2]) != EOF) {
+        moving_luigi[i].width = 1;
+        moving_luigi[i].height = 1;
         i++;
     }
 }
@@ -542,7 +602,7 @@ void draw_character(int x,int y,int width,int height,int color[]){
 
 void draw_lives(Peach *peach) {
     int i;
-    for (i=0;i<3;i++) {
+    for (i=0;i<5;i++) {
         if (i<peach->num_lives) {
             draw_static_peach(10+i*20,40,.25,1);
         }
@@ -553,12 +613,11 @@ void draw_lives(Peach *peach) {
     }
 }
 
-#define INT_DIGITS 19 // enough for 64 bit integer
 void display_score() {
     int integer = score;
     // convert int to string
-    static char buf[INT_DIGITS + 2];
-    char *p = buf + INT_DIGITS + 1; // points to terminating '\0'
+    static char buf[21];
+    char *p = buf + 20; // points to terminating '\0'
     if (integer >= 0) {
         do {
             *--p = '0' + (integer % 10);
@@ -574,12 +633,11 @@ void display_score() {
     }
 
     gfx_color(0,0,0); // erase previous score
-    gfx_fill_rectangle(65,10,150,20);
+    gfx_fill_rectangle(115,10,150,20);
 
     gfx_color(255,255,255);
-    printf("converted integer is %i to %s\n",score,p);
-    gfx_text(70,25,"Score: ");
-    gfx_text(110,26,p);
+    gfx_text(120,25,"Score: ");
+    gfx_text(165,26,p);
 }
 
 void reset_all(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap, Life *life, Coin *coin) {
@@ -590,9 +648,9 @@ void reset_all(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luig
 }
 
 void new_fireball(Fireball *fireballs, int f) {
-    fireballs[f].x_pos = 80;
+    fireballs[f].x_pos = 120;
     fireballs[f].y_pos = height-40-100*5-30;
-    fireballs[f].angle = (rand()%1000) / 1000. * PI/2.;
+    fireballs[f].angle = rand()%1000 / 1000. * (7.*PI/12.);
     fireballs[f].radius = 25;
     fireballs[f].bounce_count = 0;
 }
@@ -737,13 +795,49 @@ void erase_mario(Mario *mario) {
 void make_luigi(Luigi *luigi) {
     luigi->x_pos = 50;
     luigi->y_pos = height-40-100*5;
-    luigi->draw_count = 0;
-    luigi->draw_position = 0;
+    luigi->draw_count = 50;
+    luigi->new_fireball = 0;
 }
 
 void draw_luigi(Luigi *luigi) {
-    gfx_color(0,180,0);
-    gfx_fill_rectangle(luigi->x_pos,luigi->y_pos-50,30,50);
+    if (luigi->new_fireball == 1) {
+        erase_luigi(luigi);
+        draw_moving_luigi(luigi->x_pos,luigi->y_pos,.5);
+        luigi->new_fireball = 0;
+    }
+    else if (luigi->draw_count < 50) { // wait before changing back
+        luigi->draw_count++;
+    }
+    else if (luigi->new_fireball == 0) {
+        erase_luigi(luigi);
+        draw_static_luigi(luigi->x_pos,luigi->y_pos,.5);
+        luigi->draw_count = 0; // reset draw count
+    }
+}
+
+void draw_static_luigi(int xPosition, int yPosition, double ratio) {
+    double xRatio=(140/30)*ratio;
+    double yRatio=(60/15)*ratio;
+
+    int i;
+    for (i=0;i<310;i++) {
+        draw_character(xPosition+(static_luigi[i].x)*xRatio,yPosition-(static_luigi[i].y)*yRatio,(static_luigi[i].width)*xRatio,(static_luigi[i].height)*yRatio,static_luigi[i].color);
+    }
+}
+
+void draw_moving_luigi(int xPosition, int yPosition, double ratio) {
+    double xRatio=(140/30)*ratio;
+    double yRatio=(60/15)*ratio;
+
+    int i;
+    for (i=0;i<310;i++) {
+        draw_character(xPosition+(moving_luigi[i].x)*xRatio,yPosition-(moving_luigi[i].y)*yRatio,(moving_luigi[i].width)*xRatio,(moving_luigi[i].height)*yRatio,moving_luigi[i].color);
+    } 
+}
+
+void erase_luigi(Luigi *luigi) {
+    gfx_color(0,0,0);
+    gfx_fill_rectangle(luigi->x_pos,luigi->y_pos-60,48,60);
 }
 
 void draw_platform() {
@@ -819,7 +913,7 @@ void make_peach(Peach *peach) {
     peach->speed = 10;
     peach->draw_count = 0;
     peach->draw_position = 0;
-    peach->num_lives = 3;
+    peach->num_lives = 5;
 }
 
 void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi, Peach *peach, Ladder *ladders, Key *key, Trap *trap, Life *life, Coin *coin, int ch_x, int ch_y) {
@@ -855,6 +949,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
             trap->exists = 0;
 
             mario->draw_count = 50; // ensure that mario is drawn
+            luigi->draw_count = 50;
             int motion[8] = {74,4,410,160, 20,4,-30,760};
             moving_sequence(fireballs,numFireballs,mario,luigi,peach,ladders,key,trap,life,coin,motion,8);
 
@@ -990,6 +1085,7 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         }
         draw_peach(peach);
         gfx_flush();
+        //usleep(timing);
     }
 }
 
@@ -1014,6 +1110,7 @@ int peach_fall(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi
         if (peach->path_level < 0) { // if fall off screen then lose
             clear_screen();
             mario->draw_count = 50; // ensure that mario is drawn
+            luigi->draw_count = 50;
             if (losing_sequence() == 32) { // if trying again
                 reset_all(fireballs,&numFireballs,mario,luigi,peach,ladders,key,trap,life,coin);
                 menu_sequence();
@@ -1359,10 +1456,10 @@ void move_trap(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luigi
 
 void draw_trap(Trap *trap) {
     if (trap->exists == 1) { // draw only if trap exists
-        if (trap->state == 0) {
+        if (trap->state == 0 && difficulty == 1) {
             gfx_color(255,0,0); // bright red
         }
-        else if (trap->state == 1) {
+        else if ((trap->state == 1 && difficulty == 1) || difficulty != 1) {
             gfx_color(0,0,0); // black
         }
         gfx_fill_rectangle(trap->x_pos,height-40-100*trap->path_level,trap->length,3);
@@ -1444,9 +1541,13 @@ void draw_life(Life *life) {
     gfx_color(180,90,255);
     gfx_fill_rectangle(life->x_pos-(life->radius/4),life->y_pos,life->radius/2,life->length+life->radius/2);
     gfx_fill_arc(life->x_pos-life->radius,life->y_pos-life->radius/2,life->radius*2,life->radius,0,180);
-    if (life->count > 1000) {
+    if (difficulty == 1 && life->count > 1500) { // life lasts longer on screen if easier difficulty level
         erase_life(life);
         life->exists = 0;
+    }
+    else if (life->count > 1000) {
+            erase_life(life);
+            life->exists = 0;
     }
     else {
         life->count++;
@@ -1472,7 +1573,7 @@ void new_coin(Coin *coin) {
 }
 
 void draw_coin(Coin *coin) {
-    gfx_color(230,215,0);
+    gfx_color(230,215,0); 
     gfx_fill_circle(coin->x_pos,coin->y_pos,coin->radius);
 }
 
@@ -1489,40 +1590,46 @@ void menu_sequence() {
     int i;
     int state = 0;
 
-    gfx_color(150,0,0); // draw path
-    gfx_fill_rectangle(0,615,width,9);
-    gfx_fill_rectangle(0,600,width,9);
+    if (show_controls == 1) { // if first time playing
+        gfx_color(150,0,0); // draw path
+        gfx_fill_rectangle(0,615,width,9);
+        gfx_fill_rectangle(0,600,width,9);
 
-    for (i=-105;i<width+150;i++) {
+        for (i=-105;i<width+150;i++) {
+            gfx_color(255,255,255); // background
+            gfx_text(275,650,"Select a difficulty level...");
+
+            gfx_color(0,0,0); // reveal background
+            gfx_fill_rectangle(i-150,625,width-i,height);
+
+            gfx_color(0,0,0); // erase path
+            gfx_fill_rectangle(i-150,615,1,9);
+            gfx_fill_rectangle(i-150,600,1,9);
+
+            gfx_color(255,255,255); // title
+            gfx_text(305,100,"Luigi's Revenge");
+
+            if (state == 0) {
+                draw_static_peach(i,600,1.5,1);
+                if (i%75 == 0) {
+                    state = 1;
+                }
+            }
+            else if (state == 1) {
+                draw_moving_peach(i,600,1.5,1);
+                if (i%75 == 0) {
+                    state = 0;
+                }
+            }
+            gfx_flush();
+            usleep(pow(10,3.5));
+            gfx_color(0,0,0);
+            gfx_fill_rectangle(i,600-180,105,180);
+        }
+    }
+    else {
         gfx_color(255,255,255); // background
         gfx_text(275,650,"Select a difficulty level...");
-
-        gfx_color(0,0,0); // reveal background
-        gfx_fill_rectangle(i-150,625,width-i,height);
-
-        gfx_color(0,0,0); // erase path
-        gfx_fill_rectangle(i-150,615,1,9);
-        gfx_fill_rectangle(i-150,600,1,9);
-
-        gfx_color(255,255,255); // title
-        gfx_text(305,100,"Luigi's Revenge");
-
-        if (state == 0) {
-            draw_static_peach(i,600,1.5,1);
-            if (i%75 == 0) {
-                state = 1;
-            }
-        }
-        else if (state == 1) {
-            draw_moving_peach(i,600,1.5,1);
-            if (i%75 == 0) {
-                state = 0;
-            }
-        }
-        gfx_flush();
-        usleep(pow(10,3.5));
-        gfx_color(0,0,0);
-        gfx_fill_rectangle(i,600-180,105,180);
     }
 
     gfx_color(255,255,255);
@@ -1729,7 +1836,7 @@ void intro_sequence() {
         if (difficulty == 1) {
             print_text(0,100," He's just standing there - cackling at my misery, really.");
             print_text(0,410," That's it? - - No fireballs? - - No falling floors? - - No anything?");
-            print_text(0,100," There's a few fireballs, I guess... - But they're going so slowly that - if you get hit, it's really no one's - fault but your own...");
+            print_text(0,100," There's a few fireballs, I guess... - - But they're going so slowly that - if you get hit, it's really no one's - fault but your own...");
             print_text(0,410," Why is this level so easy?!");
             print_text(0,100," Well if you wanted something harder - you should have chosen it! - - Don't go shooting the messenger!");
         }
@@ -1738,19 +1845,19 @@ void intro_sequence() {
             print_text(0,410," Of course I'll save you, Mario! - - What kind of girlfriend would I be - if I left you here...");
             print_text(0,100," Peach...");
             print_text(0,410," Don't look so starstruck! - - So... -- are these fireballs dangerous?");
-            print_text(0,100," Be very careful! - - You only have three chances to be hit - by a fireball before you'll be drained - of all your energy! - - ...And possibly die... - - I don't really know...");
+            print_text(0,100," Be very careful! - - You only have five chances to be hit - by a fireball before you'll be drained - of all your energy! - - ...And possibly die... - - I don't really know...");
             print_text(0,100," The floor will also drop out underneath - you every once in a while... - - Make sure you're not standing on it - when it goes red...");
         }
         else if (difficulty == 3) {
-            print_text(0,100," He's been launching fireballs at any - potential rescuers to scare them off! - - You can be hit only three times before - you're drained off all your energy!");
+            print_text(0,100," He's been launching fireballs at any - potential rescuers to scare them off! - - You can be hit only five times before - you're drained off all your energy!");
             print_text(0,100," The floor is also very unstable!! - - Every so often you might find yourself - falling through them...");
             print_text(0,410," So do I get any warning if I'm suddenly - about to drop through a floor?");
-            print_text(0,100," The floor will turn red before it - disappears! - - Make sure you're not standing on it - when it does or you'll fall!");
+            print_text(0,100," No warning! - - Make sure you're not standing on it - when it does or you'll fall!");
             print_text(0,100," If you're on the ground floor, you'll - fall to your death...");
         }
         print_text(0,100," If you happen to lose a life, - mushrooms will start growing on the - floors. - - If you collect one, - you'll get a life back!");
         print_text(0,100," However, they don't last very long, - so you'll have to hurry!");
-        print_text(0,100," Coins will also appear on the ground. - - If you collect enough, - you might win a special prize!");
+        print_text(0,100," Coins will also appear on the ground. - - For every coin collected you win - 10 points!");
         print_text(0,410," How delightful...");
         gfx_color(0,0,0);
         gfx_fill_rectangle(0,0,width,500);
@@ -1823,8 +1930,8 @@ int losing_sequence() {
 
     draw_cage(190,height-115,2);
 
-    print_text(0,200," PEACH. - - I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS. - - WOW.");
-    print_text(0,200," ARE YOU GOING TO TRY AGAIN? - - OR ARE YOU A LITTLE BITCH?");
+    print_text(0,120," I SAVE YOU SO MANY TIMES. - - AND YOU JUST LET ME DOWN - LIKE THIS.");
+    print_text(0,120," ARE YOU GOING TO TRY AGAIN?");
     gfx_color(0,0,0);
     gfx_fill_rectangle(0,0,width,500);
     gfx_color(255,255,255);
