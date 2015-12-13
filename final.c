@@ -112,14 +112,14 @@ int quit = 0;
 int score = 0;
 
 Coord talking_peach[50];
-Coord static_peach_right[49];
-Coord moving_peach_right[50];
-Coord static_peach_left[49];
-Coord moving_peach_left[50];
+Coord static_peach_right[54];
+Coord moving_peach_right[55];
+Coord static_peach_left[54];
+Coord moving_peach_left[55];
 Coord static_mario[274];
 Coord talking_mario[296];
 Coord static_luigi[310];
-Coord moving_luigi[369];
+Coord moving_luigi[366];
 
 // function prototypes
 void import_all();
@@ -535,6 +535,7 @@ void import_all() {
 
 void set_peach_color(int *color_array, char color) {
     switch(color) {
+        case 'x': color_array[0] = 0; color_array[1] = 0; color_array[2] = 0; break;
         case 'd': color_array[0] = 255; color_array[1] = 50; color_array[2] = 200; break;
         case 'l': color_array[0] = 255; color_array[1] = 115; color_array[2] = 180; break;
         case 'y': color_array[0] = 255; color_array[1] = 225; color_array[2] = 0; break;
@@ -829,7 +830,7 @@ void draw_moving_luigi(int xPosition, int yPosition, double ratio) {
     double yRatio=(60/15)*ratio;
 
     int i;
-    for (i=0;i<368;i++) {
+    for (i=0;i<366;i++) {
         draw_character(xPosition+(moving_luigi[i].x)*xRatio,yPosition-(moving_luigi[i].y)*yRatio,(moving_luigi[i].width)*xRatio,(moving_luigi[i].height)*yRatio,moving_luigi[i].color);
     } 
 }
@@ -1175,7 +1176,7 @@ void draw_static_peach_right(int xPosition, int yPosition, double ratio) {
     double yRatio=(60/15)*ratio;
 
     int i;
-    for (i=0;i<49;i++) {
+    for (i=0;i<54;i++) {
         draw_character(xPosition+(static_peach_right[i].x)*xRatio,yPosition-(static_peach_right[i].y)*yRatio,(static_peach_right[i].width)*xRatio,(static_peach_right[i].height)*yRatio,static_peach_right[i].color);
     }
 }
@@ -1185,7 +1186,7 @@ void draw_moving_peach_right(int xPosition, int yPosition, double ratio) {
     double yRatio=(60/15)*ratio;
 
     int i;
-    for (i=0;i<50;i++) {
+    for (i=0;i<55;i++) {
         draw_character(xPosition+(moving_peach_right[i].x)*xRatio,yPosition-(moving_peach_right[i].y)*yRatio,(moving_peach_right[i].width)*xRatio,(moving_peach_right[i].height)*yRatio,moving_peach_right[i].color);
     }
 }
@@ -1195,7 +1196,7 @@ void draw_static_peach_left(int xPosition, int yPosition, double ratio) {
     double yRatio=(60/15)*ratio;
 
     int i;
-    for (i=0;i<49;i++) {
+    for (i=0;i<54;i++) {
         draw_character(xPosition+(static_peach_left[i].x)*xRatio,yPosition-(static_peach_left[i].y)*yRatio,(static_peach_left[i].width)*xRatio,(static_peach_left[i].height)*yRatio,static_peach_left[i].color);
     }
 }
@@ -1205,7 +1206,7 @@ void draw_moving_peach_left(int xPosition, int yPosition, double ratio) {
     double yRatio=(60/15)*ratio;
 
     int i;
-    for (i=0;i<50;i++) {
+    for (i=0;i<55;i++) {
         draw_character(xPosition+(moving_peach_left[i].x)*xRatio,yPosition-(moving_peach_left[i].y)*yRatio,(moving_peach_left[i].width)*xRatio,(moving_peach_left[i].height)*yRatio,moving_peach_left[i].color);
     }
 }
