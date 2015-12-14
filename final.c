@@ -955,7 +955,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         draw_peach_motion(fireballs,numFireballs,mario,luigi,peach,ladders,key,trap,life,coin);
         return;
     }
-    else if ((l == 6 && x < 410) && key->caught == 0) { // restrict movement on fifth level if keys not collected
+    else if ((l == 6 && x < 410) && key->caught == 0) { // restrict movement on sixth level if keys not collected
         peach->x_pos = 410;
         if (key->intro_complete == 0) { // if haven't completed intro and approaching mario
             draw_peach(peach);
@@ -1022,7 +1022,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
             display_key_status(key);
         }
     }
-    else if (l==5 && x < 265) { // restrict movement on fourth level
+    else if (l == 5 && x < 265) { // restrict movement on fifth level
         peach->x_pos = 265;
     }
     else { // any other floor
@@ -1058,7 +1058,7 @@ void move_peach(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
                 }
             }
         }
-        else if (peach->is_climbing==1) { // on ladder
+        else if (peach->is_climbing == 1) { // on ladder
             if (ch_x == 0) { // moving vertically
                 peach->draw_position = 2;
                 peach->x_pos = x;
