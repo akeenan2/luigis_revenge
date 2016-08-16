@@ -271,7 +271,7 @@ int main() {
     moving_sequence(fireballs,numFireballs,&mario,&luigi,&peach,ladders,&key,&trap,&life,&coin,motion2,4);
     peach.path_level = 6; // set position of peach
 
-    key.caught = 1;
+    key.caught = 0;
 
     while (quit == 0) { // while not quitting the game
         erase_peach(&peach); // erase previous draw
@@ -744,7 +744,7 @@ int collided (Fireball *fireballs, Peach *peach, int f) {
     distance = sqrt(pow(change_x,2)+pow(change_y,2));
 
     angle = atan(change_y/change_x);
-    peach_distance = abs(30.*sin(angle));
+    peach_distance = abs((int)(30.*sin(angle)));
 
     if (fireballs[f].radius + peach_distance >= distance) {
         return 1;
@@ -1103,7 +1103,7 @@ void peach_jump(Fireball *fireballs, int numFireballs, Mario *mario, Luigi *luig
         draw_all_static(mario,luigi,peach,ladders,key,trap,life,coin);
         draw_fireballs(fireballs,numFireballs);
         if (peach->is_jumping == 1) {
-            peach->jump_speed = abs(peach->jump_height-125)/100.; // slow at top and faster at bottom of jump
+            peach->jump_speed = abs((int)(peach->jump_height-125))/100.; // slow at top and faster at bottom of jump
             peach->draw_position = 1;
             peach->jump_height += peach->jump_direction*peach->jump_speed;
             if (peach->jump_height >= 90) {
@@ -1127,7 +1127,7 @@ int peach_fall(Fireball *fireballs, int *numFireballs, Mario *mario, Luigi *luig
         erase_peach(peach);
         draw_all_static(mario,luigi,peach,ladders,key,trap,life,coin);
         draw_fireballs(fireballs,*numFireballs);
-        peach->fall_speed = abs(peach->fall_height-125)/125.; // slow at top and faster at bottom of fall
+        peach->fall_speed = abs((int)(peach->fall_height-125))/125.; // slow at top and faster at bottom of fall
 
         peach->fall_height+=peach->fall_speed*5;
 
@@ -1319,7 +1319,7 @@ int collect_life(Peach *peach, Life *life) {
     distance = sqrt(pow(change_x,2)+pow(change_y,2));
 
     angle = atan(change_y/change_x);
-    peach_distance = abs(30.*sin(angle));
+    peach_distance = abs((int)(30.*sin(angle)));
 
     if (life->radius + peach_distance >= distance) {
         return 1;
@@ -1336,7 +1336,7 @@ int collect_coin(Peach *peach, Coin *coin) {
     distance = sqrt(pow(change_x,2)+pow(change_y,2));
 
     angle = atan(change_y/change_x);
-    peach_distance = abs(30.*sin(angle));
+    peach_distance = abs((int)(30.*sin(angle)));
 
     if (coin->radius + peach_distance >= distance) {
         return 1;
@@ -1839,7 +1839,6 @@ void moving_sequence(Fireball *fireballs, int numFireballs, Mario *mario, Luigi 
         if (i>=length) {
             return;
         }
-
     }
 }
 
